@@ -44,6 +44,30 @@ export const HERRAMIENTAS = [
         fin: { type: 'string', description: `Opcional, solo si se sabe cuándo acaba. ${FECHA}` },
         lugar: { type: 'string', description: 'Opcional.' },
         nota: { type: 'string', description: 'Opcional, un detalle suelto que merezca la pena guardar.' },
+        repetir: {
+          type: 'object',
+          description:
+            'Solo si el usuario pide algo que se repite: "todos los días", "cada martes", "todas las semanas". Omite este campo por completo para un evento suelto.',
+          properties: {
+            frecuencia: {
+              type: 'string',
+              enum: ['diaria', 'semanal'],
+              description: '"diaria" para todos los días, "semanal" para un día concreto de la semana.',
+            },
+            dias: {
+              type: 'array',
+              items: { type: 'integer', minimum: 0, maximum: 6 },
+              description:
+                'Solo con frecuencia semanal. Día de la semana: lunes=0 ... domingo=6. Si no se indica, se usa el día de la semana de "inicio".',
+            },
+            hasta: {
+              type: 'string',
+              description:
+                'Opcional, "YYYY-MM-DD". Si no se da, se repite varios meses hacia delante sin que haga falta preguntar por cuánto tiempo.',
+            },
+          },
+          required: ['frecuencia'],
+        },
       },
       required: ['titulo', 'categoria', 'inicio'],
     },
@@ -69,13 +93,25 @@ export const HERRAMIENTAS = [
   {
     name: 'borrar_evento',
     description:
-      'Elimina un evento. Es irreversible: no la uses si hay cualquier duda sobre a cuál se refiere el usuario. Pregunta antes.',
+      'Elimina un evento suelto. Es irreversible: no la uses si hay cualquier duda sobre a cuál se refiere el usuario. Pregunta antes. Si el evento pertenece a una serie repetida (tiene serieId) y el usuario quiere borrar TODAS las ocurrencias, usa borrar_serie en su lugar, no la borres una a una.',
     input_schema: {
       type: 'object',
       properties: {
         id: { type: 'string', description: 'El id que devolvió consultar_agenda.' },
       },
       required: ['id'],
+    },
+  },
+  {
+    name: 'borrar_serie',
+    description:
+      'Elimina TODAS las ocurrencias de un evento repetido de golpe (por ejemplo, "quita el gimnasio de los lunes para siempre"). Irreversible y de más alcance que borrar_evento: confirma con el usuario antes si hay la más mínima duda.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        serieId: { type: 'string', description: 'El serieId que devolvió consultar_agenda en ese evento.' },
+      },
+      required: ['serieId'],
     },
   },
 ];

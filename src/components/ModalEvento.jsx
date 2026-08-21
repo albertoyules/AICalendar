@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Trash2, X } from 'lucide-react';
 
 import { LISTA_CATEGORIAS, coloresDe } from '../config/categorias';
-import { claveDe, hoy, horaDe } from '../lib/fechas';
+import { DIAS_CORTOS, claveDe, hoy, horaDe, indiceSemana } from '../lib/fechas';
 
 /**
  * Alta y edicion de un evento a mano.
@@ -10,7 +10,7 @@ import { claveDe, hoy, horaDe } from '../lib/fechas';
  * La IA acabara creando la mayoria, pero esto tiene que existir igual: cuando
  * algo sale mal quieres poder arreglarlo tu, sin negociar con nadie.
  */
-export default function ModalEvento({ evento, fechaSugerida, oscuro, onGuardar, onBorrar, onCerrar }) {
+export default function ModalEvento({ evento, fechaSugerida, oscuro, onGuardar, onBorrar, onBorrarSerie, onCerrar }) {
   const editando = Boolean(evento?.id);
 
   const [titulo, setTitulo] = useState(evento?.titulo ?? '');
@@ -22,6 +22,14 @@ export default function ModalEvento({ evento, fechaSugerida, oscuro, onGuardar, 
   const [lugar, setLugar] = useState(evento?.lugar ?? '');
   const [nota, setNota] = useState(evento?.nota ?? '');
 
+  // La repetición solo se ofrece al crear: cambiar la de una serie ya
+  // existente (mover "todos los futuros" a otro patrón) queda fuera por
+  // ahora — editar una instancia sigue siendo una edición suelta normal.
+  const [repetir, setRepetir] = useState('no'); // 'no' | 'diaria' | 'semanal'
+  const [diasSemana, setDiasSemana] = useState(() => [indiceSemana(fecha)]);
+  const [hastaSerie, setHastaSerie] = useState('');
+  const [confirmandoSerie, setConfirmandoSerie] = useState(false);
+
   useEffect(() => {
     const alPulsar = (e) => e.key === 'Escape' && onCerrar();
     window.addEventListener('keydown', alPulsar);
@@ -31,7 +39,7 @@ export default function ModalEvento({ evento, fechaSugerida, oscuro, onGuardar, 
   const enviar = (e) => {
     e.preventDefault();
     if (!titulo.trim()) return;
-    onGuardar({
+    const base = {
       id: evento?.id,
       titulo,
       categoria: categoriaId,
@@ -41,7 +49,21 @@ export default function ModalEvento({ evento, fechaSugerida, oscuro, onGuardar, 
       lugar,
       nota,
       creadoPor: evento?.creadoPor ?? 'manual',
-    });
+    };
+    if (!editando && repetir !== 'no') {
+      onGuardar({
+        ...base,
+        repetir: { frecuencia: repetir, dias: repetir === 'semanal' ? diasSemana : undefined, hasta: hastaSerie || undefined },
+      });
+      return;
+    }
+    onGuardar(base);
+  };
+
+  const alternarDia = (i) => {
+    setDiasSemana((actuales) =>
+      actuales.includes(i) ? actuales.filter((d) => d !== i) : [...actuales, i].sort(),
+    );
   };
 
   return (
@@ -150,6 +172,68 @@ export default function ModalEvento({ evento, fechaSugerida, oscuro, onGuardar, 
             </div>
           )}
 
+          {!editando && (
+            <div className="flex flex-col gap-2.5">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.07em]" style={{ color: 'var(--tinta-tenue)' }}>
+                Repetir
+              </span>
+              <div className="flex gap-2">
+                {[
+                  ['no', 'No'],
+                  ['diaria', 'Cada día'],
+                  ['semanal', 'Cada semana'],
+                ].map(([valor, etiqueta]) => (
+                  <button
+                    key={valor}
+                    type="button"
+                    onClick={() => setRepetir(valor)}
+                    className="flex-1 rounded-[10px] py-2.5 text-[13px] font-medium"
+                    style={{
+                      background: repetir === valor ? 'var(--tinta)' : 'var(--superficie-3)',
+                      color: repetir === valor ? 'var(--papel)' : 'var(--tinta-media)',
+                      border: '1px solid var(--borde)',
+                    }}
+                  >
+                    {etiqueta}
+                  </button>
+                ))}
+              </div>
+
+              {repetir === 'semanal' && (
+                <div className="flex gap-1.5">
+                  {DIAS_CORTOS.map((dia, i) => (
+                    <button
+                      key={dia}
+                      type="button"
+                      onClick={() => alternarDia(i)}
+                      className="flex h-9 flex-1 items-center justify-center rounded-[9px] text-[12px] font-medium"
+                      style={{
+                        background: diasSemana.includes(i) ? 'var(--tinta)' : 'var(--superficie-3)',
+                        color: diasSemana.includes(i) ? 'var(--papel)' : 'var(--tinta-suave)',
+                        border: '1px solid var(--borde)',
+                      }}
+                    >
+                      {dia.slice(0, 1)}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {repetir !== 'no' && (
+                <Campo etiqueta="Hasta (opcional)">
+                  <input
+                    type="date"
+                    value={hastaSerie}
+                    onChange={(e) => setHastaSerie(e.target.value)}
+                    min={fecha}
+                    className="w-full bg-transparent text-[15px] outline-none"
+                    style={{ color: 'var(--tinta)' }}
+                  />
+                </Campo>
+              )}
+            </div>
+          )}
+
           <Campo etiqueta="Dónde">
             <input
               value={lugar}
@@ -170,6 +254,40 @@ export default function ModalEvento({ evento, fechaSugerida, oscuro, onGuardar, 
             />
           </Campo>
         </div>
+
+        {editando && evento.serieId && (
+          <div className="-mt-1 flex items-center justify-center gap-1 text-[12px]" style={{ color: 'var(--tinta-tenue)' }}>
+            {confirmandoSerie ? (
+              <>
+                <span>¿Borrar todas las ocurrencias?</span>
+                <button
+                  type="button"
+                  onClick={() => onBorrarSerie(evento.serieId)}
+                  className="font-semibold underline"
+                  style={{ color: 'var(--ahora)' }}
+                >
+                  Sí, todas
+                </button>
+                <span>·</span>
+                <button type="button" onClick={() => setConfirmandoSerie(false)} className="underline">
+                  Cancelar
+                </button>
+              </>
+            ) : (
+              <>
+                <span>Parte de una serie repetida.</span>
+                <button
+                  type="button"
+                  onClick={() => setConfirmandoSerie(true)}
+                  className="underline"
+                  style={{ color: 'var(--tinta-media)' }}
+                >
+                  Borrar toda la serie
+                </button>
+              </>
+            )}
+          </div>
+        )}
 
         <div className="flex items-center gap-3">
           {editando && (

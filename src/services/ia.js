@@ -16,6 +16,8 @@
 import {
   actualizarEvento,
   borrarEvento,
+  borrarSerie,
+  crearSerieRecurrente,
   guardarEvento,
   leerEventos,
 } from './eventosRepository';
@@ -93,6 +95,7 @@ function paraLaIA(evento) {
     fin: evento.fin ?? undefined,
     lugar: evento.lugar ?? undefined,
     dia: nombreDia(evento.inicio),
+    serieId: evento.serieId ?? undefined,
   };
 }
 
@@ -103,7 +106,11 @@ const ACCIONES = {
     return { eventos: eventos.map(paraLaIA) };
   },
 
-  async crear_evento(datos) {
+  async crear_evento({ repetir, ...datos }) {
+    if (repetir) {
+      const { serieId, creados } = await crearSerieRecurrente({ ...datos, creadoPor: 'ia' }, repetir);
+      return { ok: true, serieId, creados };
+    }
     const id = await guardarEvento({ ...datos, creadoPor: 'ia' });
     return { ok: true, id };
   },
@@ -116,6 +123,11 @@ const ACCIONES = {
 
   async borrar_evento({ id }) {
     await borrarEvento(id);
+    return { ok: true };
+  },
+
+  async borrar_serie({ serieId }) {
+    await borrarSerie(serieId);
     return { ok: true };
   },
 };

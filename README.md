@@ -332,6 +332,25 @@ Dos detalles que costaron un rato:
 - Si paras de hablar antes de que el navegador dé por cerrada la última frase,
   esa frase se perdía. Ahora el dictado se queda también con lo provisional.
 
+### Eventos recurrentes
+
+Un evento que se repite no es un documento distinto: son N eventos normales
+que comparten `serieId`. Sin plantilla aparte — cada ocurrencia es editable y
+borrable una a una con las funciones de siempre; `serieId` solo sirve para
+poder borrarlas todas de golpe con `borrarSerie()`. Tope de 180 días vista si
+no se da fecha de fin (`src/lib/recurrencia.js`); pasado ese punto hay que
+crearla otra vez — no se auto-extiende.
+
+Se puede crear a mano (selector en `ModalEvento`) o pidiéndoselo a la IA
+("todos los martes", "cada día"). **Con Haiku, esto tiene un límite real que
+no tiene arreglo de código**: si no le das fecha de fin, tiende a preguntar
+"¿hasta cuándo?" en vez de usar el valor por defecto, incluso insistiéndole
+directamente — llegó a inventarse que no podía crear algo indefinido, que es
+falso. Probado con Sonnet usando el mismo prompt exacto: lo crea a la primera
+sin preguntar. Es una diferencia de modelo, no de diseño. Mitigación práctica:
+si Haiku pregunta, dale una fecha de fin generosa ("hasta final de año") — con
+fecha de fin explícita funciona perfecto siempre.
+
 ### Los nombres de eventos van coloreados
 
 Cuando la IA menciona un evento lo marca con su categoría —`[[salud|tratamiento]]`—

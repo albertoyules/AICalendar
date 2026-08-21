@@ -19,6 +19,8 @@ import { useTema } from './hooks/useTema';
 import {
   actualizarEvento,
   borrarEvento,
+  borrarSerie,
+  crearSerieRecurrente,
   explicarFallo,
   guardarEvento,
   sembrarSiHaceFalta,
@@ -108,9 +110,10 @@ export default function App() {
   const [avisoEscritura, setAvisoEscritura] = useState(null);
 
   const alGuardar = useCallback(async (datos) => {
-    const { id, ...resto } = datos;
+    const { id, repetir, ...resto } = datos;
     try {
       if (id) await actualizarEvento(id, resto);
+      else if (repetir) await crearSerieRecurrente(resto, repetir);
       else await guardarEvento(resto);
       setAvisoEscritura(null);
       setModal(null);
@@ -122,6 +125,16 @@ export default function App() {
   const alBorrar = useCallback(async (id) => {
     try {
       await borrarEvento(id);
+      setAvisoEscritura(null);
+      setModal(null);
+    } catch (error) {
+      setAvisoEscritura(explicarFallo(error));
+    }
+  }, []);
+
+  const alBorrarSerie = useCallback(async (serieId) => {
+    try {
+      await borrarSerie(serieId);
       setAvisoEscritura(null);
       setModal(null);
     } catch (error) {
@@ -237,6 +250,8 @@ export default function App() {
             oscuro={oscuro}
             onGuardar={alGuardar}
             onBorrar={alBorrar}
+          onBorrarSerie={alBorrarSerie}
+            onBorrarSerie={alBorrarSerie}
             onCerrar={() => setModal(null)}
           />
         )}
@@ -307,6 +322,7 @@ export default function App() {
           oscuro={oscuro}
           onGuardar={alGuardar}
           onBorrar={alBorrar}
+          onBorrarSerie={alBorrarSerie}
           onCerrar={() => setModal(null)}
         />
       )}

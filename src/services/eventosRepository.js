@@ -25,7 +25,8 @@ import {
 import { firestore, hayFirebase } from '../config/firebase';
 import { CATEGORIA_POR_DEFECTO } from '../config/categorias';
 import { sinMarcas } from '../components/Markdown';
-import { hoy, sumarDias } from '../lib/fechas';
+import { claveDe, diffDias, horaDe, hoy, sumarDias } from '../lib/fechas';
+import { fechasDeSerie } from '../lib/recurrencia';
 
 const CLAVE_LOCAL = 'iacalendar.eventos';
 const CLAVE_MIGRADO = 'iacalendar.migrado';
@@ -194,6 +195,63 @@ export async function borrarEvento(id) {
     return;
   }
   await deleteDoc(documentoEvento(id));
+}
+
+/* ------------------------------------------------------------------ */
+/* Series repetidas                                                     */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Crea una serie: un evento que se repite, como N eventos normales que
+ * comparten `serieId`. No hay un documento "plantilla" aparte — cada
+ * ocurrencia es un evento de verdad, editable y borrable una a una con las
+ * funciones de siempre. `serieId` es solo la etiqueta que las agrupa para
+ * poder borrarlas todas de una vez con `borrarSerie`.
+ */
+export async function crearSerieRecurrente(bruto, repetir) {
+  const serieId = idLocal();
+  const claveInicio = claveDe(bruto.inicio);
+  const hora = horaDe(bruto.inicio);
+  const desplazamientoFin = bruto.fin ? diffDias(claveInicio, claveDe(bruto.fin)) : null;
+  const horaFin = bruto.fin ? horaDe(bruto.fin) : null;
+
+  const fechas = fechasDeSerie({ ...repetir, inicio: claveInicio });
+
+  const instancias = fechas.map((clave) => ({
+    ...normalizarEvento({
+      ...bruto,
+      inicio: hora ? `${clave}T${hora}` : clave,
+      fin: desplazamientoFin === null ? null : `${sumarDias(clave, desplazamientoFin)}T${horaFin}`,
+    }),
+    serieId,
+    creadoEn: new Date().toISOString(),
+  }));
+
+  if (!enFirestore()) {
+    escribirLocal([...leerLocal(), ...instancias.map((e) => ({ id: idLocal(), ...e }))]);
+    return { serieId, creados: instancias.length };
+  }
+
+  // 180 ocurrencias como mucho (tope de fechasDeSerie): muy por debajo del
+  // límite de 500 operaciones de un writeBatch, no hace falta trocearlo.
+  const lote = writeBatch(firestore);
+  for (const instancia of instancias) lote.set(doc(coleccionEventos()), instancia);
+  await lote.commit();
+  return { serieId, creados: instancias.length };
+}
+
+/** Borra todas las ocurrencias de una serie, en el almacén que toque. */
+export async function borrarSerie(serieId) {
+  if (!enFirestore()) {
+    const restantes = leerLocal().filter((e) => e.serieId !== serieId);
+    escribirLocal(restantes);
+    return;
+  }
+
+  const snap = await getDocs(query(coleccionEventos(), where('serieId', '==', serieId)));
+  const lote = writeBatch(firestore);
+  snap.docs.forEach((d) => lote.delete(d.ref));
+  await lote.commit();
 }
 
 /* ------------------------------------------------------------------ */

@@ -55,6 +55,11 @@ export function sumarDias(clave, n) {
   return aClave(f);
 }
 
+/** Días entre dos claves. Positivo si `b` es posterior a `a`. */
+export function diffDias(a, b) {
+  return Math.round((aFecha(b) - aFecha(a)) / 86400000);
+}
+
 export function sumarMeses(clave, n) {
   const f = aFecha(clave);
   const diaOriginal = f.getDate();
