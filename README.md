@@ -117,6 +117,25 @@ las variables de entorno (Settings > Environment Variables):
 | `ANTHROPIC_MODEL` | `claude-haiku-4-5` |
 | `VITE_FIREBASE_API_KEY` y las otras cinco | tu `.env.local` |
 
+### Comprobar que la configuración es correcta
+
+Abre `https://<tu-app>.vercel.app/api/salud?probar=1`. Dice si la clave está,
+si tiene la pinta correcta y si Anthropic la acepta — sin enseñar su valor.
+Devuelve `todoBien: true` cuando está todo en orden, y una pista concreta
+cuando no. Detecta lo que no se ve en el panel de Vercel: una clave con un
+salto de línea al pegarla, o una que se revocó.
+
+Las `VITE_` no salen ahí y no es un olvido: se incrustan al compilar y la
+función no llega a verlas. Para esas, mira la app:
+
+| Lo que ves al abrirla | Qué significa |
+|---|---|
+| «Entrar con Google» | Las seis están bien |
+| El calendario y «Guardando en este navegador» | Falta alguna, o no has redesplegado |
+
+Recuerda que tocar una variable `VITE_` obliga a **volver a desplegar**: se
+incrustan al compilar, no se leen al ejecutarse.
+
 Después, en Firebase > Authentication > Settings > **Dominios autorizados**,
 añade el dominio que te dé Vercel. Sin eso la entrada con Google falla, que es
 exactamente el error que sale al abrirlo desde el móvil por wifi.
