@@ -122,8 +122,13 @@ las variables de entorno (Settings > Environment Variables):
 Abre `https://<tu-app>.vercel.app/api/salud?probar=1`. Dice si la clave está,
 si tiene la pinta correcta y si Anthropic la acepta — sin enseñar su valor.
 Devuelve `todoBien: true` cuando está todo en orden, y una pista concreta
-cuando no. Detecta lo que no se ve en el panel de Vercel: una clave con un
-salto de línea al pegarla, o una que se revocó.
+cuando no: que falta, que no empieza por `sk-ant-`, o que Anthropic la rechaza
+por revocada.
+
+Los espacios y saltos de línea al pegar la clave no rompen nada: el servidor la
+limpia antes de usarla. Es un fallo facilísimo de cometer en un panel de
+variables y en pantalla se ve idéntica a una buena, así que no merecía la pena
+que costara un rato de búsqueda.
 
 Las `VITE_` no salen ahí y no es un olvido: se incrustan al compilar y la
 función no llega a verlas. Para esas, mira la app:

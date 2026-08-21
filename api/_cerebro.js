@@ -19,11 +19,23 @@ const MAX_TOKENS = 8000;
 
 export const MODELO = process.env.ANTHROPIC_MODEL ?? 'claude-haiku-4-5';
 
+/**
+ * La clave, sin espacios.
+ *
+ * Al pegarla en un panel de variables de entorno se cuela un salto de línea
+ * con muchísima facilidad, y entonces Anthropic la rechaza aunque sea
+ * correcta. En el panel se ve idéntica a una buena, así que es un rato
+ * perdido buscando dónde está el fallo. Aquí se limpia y ya está.
+ */
+export function claveLimpia() {
+  return process.env.ANTHROPIC_API_KEY?.trim() || undefined;
+}
+
 let cliente = null;
 function claude() {
   // Perezoso: si se crea al importar, un despliegue sin la clave revienta al
   // arrancar en vez de devolver un error que se pueda leer.
-  cliente ??= new Anthropic();
+  cliente ??= new Anthropic({ apiKey: claveLimpia() });
   return cliente;
 }
 
@@ -48,7 +60,7 @@ export async function pensar({ mensajes, contexto }) {
   if (!contexto?.hoy) {
     throw new ErrorDeCerebro(400, 'Falta el contexto temporal.', false);
   }
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!claveLimpia()) {
     throw new ErrorDeCerebro(500, 'Falta la clave de Anthropic en el servidor.', false);
   }
 

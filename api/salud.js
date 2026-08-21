@@ -11,7 +11,7 @@
  */
 import Anthropic from '@anthropic-ai/sdk';
 
-import { MODELO } from './_cerebro.js';
+import { MODELO, claveLimpia } from './_cerebro.js';
 
 function revisarClave() {
   const bruta = process.env.ANTHROPIC_API_KEY;
@@ -22,27 +22,27 @@ function revisarClave() {
       pista: 'Añade ANTHROPIC_API_KEY en Vercel (Settings > Environment Variables) y vuelve a desplegar. Sin prefijo VITE_.',
     };
   }
-  // Un espacio o un salto de línea al copiar es la causa más habitual de que
-  // una clave correcta sea rechazada, y no se ve mirando el panel.
-  if (bruta !== bruta.trim()) {
-    return {
-      estado: 'CON ESPACIOS',
-      pista: 'La clave tiene espacios o un salto de línea al principio o al final. Vuelve a pegarla limpia.',
-    };
-  }
-  if (!bruta.startsWith('sk-ant-')) {
+  // Un espacio o un salto de línea al copiar ya no rompe nada —el servidor la
+  // limpia— pero se avisa igual, por si esconde otro error al pegarla.
+  const nota =
+    bruta !== bruta.trim()
+      ? 'Venía con espacios o un salto de línea al pegarla. Se limpian solos, así que funciona igual; puedes dejarla como está.'
+      : undefined;
+
+  const limpia = bruta.trim();
+  if (!limpia.startsWith('sk-ant-')) {
     return {
       estado: 'RARA',
       pista: 'No empieza por sk-ant-. ¿Seguro que has pegado la clave de Anthropic y no otra cosa?',
     };
   }
-  return { estado: 'PRESENTE', longitud: bruta.length, empieza: 'sk-ant-…' };
+  return { estado: 'PRESENTE', longitud: limpia.length, empieza: 'sk-ant-…', nota };
 }
 
 /** Llamada mínima de verdad, para saber si Anthropic la acepta. */
 async function probarClave() {
   try {
-    await new Anthropic().messages.create({
+    await new Anthropic({ apiKey: claveLimpia() }).messages.create({
       model: MODELO,
       max_tokens: 1,
       messages: [{ role: 'user', content: 'hola' }],
