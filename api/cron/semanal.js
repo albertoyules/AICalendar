@@ -17,22 +17,23 @@ export default async function handler(req, res) {
 
   try {
     const dias = Array.from({ length: 7 }, (_, i) => sumarDias(lunes, i));
-    const usuarios = await usuariosConDispositivo();
+    const refsUsuarios = await usuariosConDispositivo();
 
     let enviados = 0;
     const fallos = [];
-    for (const usuario of usuarios.docs) {
-      if (usuario.data().ultimoSemanalEnviado === lunes) continue;
+    for (const refUsuario of refsUsuarios) {
+      const snap = await refUsuario.get();
+      if (snap.exists && snap.data().ultimoSemanalEnviado === lunes) continue;
 
-      const eventos = await eventosDelUsuario(usuario.ref, dias[0], dias[6]);
-      const { enviados: mandados, fallos: fallosUsuario } = await enviarATodosLosDispositivos(usuario.ref, {
+      const eventos = await eventosDelUsuario(refUsuario, dias[0], dias[6]);
+      const { enviados: mandados, fallos: fallosUsuario } = await enviarATodosLosDispositivos(refUsuario, {
         titulo: 'Tu semana',
         cuerpo: resumenSemana(dias, agruparPorDia(eventos)),
         tipo: 'semanal',
       });
       fallos.push(...fallosUsuario);
       if (mandados > 0) {
-        await usuario.ref.set({ ultimoSemanalEnviado: lunes }, { merge: true });
+        await refUsuario.set({ ultimoSemanalEnviado: lunes }, { merge: true });
         enviados += mandados;
       }
     }

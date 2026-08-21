@@ -25,7 +25,26 @@ export async function eventosDelUsuario(refUsuario, desde, hasta) {
   return snap.docs.map((d) => d.data());
 }
 
-export function usuariosConDispositivo() {
+/**
+ * A quién hay que avisar: no se enumera `usuarios` directamente porque ese
+ * documento nunca se crea explícitamente — solo existen sus subcolecciones
+ * (`eventos`, `dispositivos`). Firestore lo enseña en la consola porque tiene
+ * hijos, pero como documento en sí no existe, y una `collection('usuarios').get()`
+ * no devuelve documentos fantasma: el bucle no encontraba a nadie a quien
+ * avisar, sin ni un error de por medio.
+ *
+ * En su lugar se parte de los dispositivos — esos sí son documentos reales—
+ * con una consulta de grupo de colecciones que encuentra todos los
+ * `dispositivos` de cualquier usuario de una vez, y de ahí se sube al uid.
+ */
+export async function usuariosConDispositivo() {
   firebaseAdmin();
-  return admin.firestore().collection('usuarios').get();
+  const dispositivos = await admin.firestore().collectionGroup('dispositivos').get();
+
+  const porUsuario = new Map();
+  for (const d of dispositivos.docs) {
+    const uid = d.ref.parent.parent.id; // .../usuarios/{uid}/dispositivos/{id}
+    if (!porUsuario.has(uid)) porUsuario.set(uid, admin.firestore().collection('usuarios').doc(uid));
+  }
+  return [...porUsuario.values()];
 }
