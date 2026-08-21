@@ -4,6 +4,7 @@ import { AlertCircle, Bell, BellOff, ChevronLeft, ChevronRight, LogOut, Moon, Pl
 import AgendaDia from './components/AgendaDia';
 import BarraMovil from './components/BarraMovil';
 import CabeceraCalendario from './components/CabeceraCalendario';
+import Habitos from './components/Habitos';
 import ModalEvento from './components/ModalEvento';
 import PanelChat from './components/PanelChat';
 import Rail from './components/Rail';
@@ -249,7 +250,11 @@ export default function App() {
           </div>
         )}
 
-        {pantalla === 'habitos' && <Pendiente seccion="habitos" />}
+        {pantalla === 'habitos' && (
+          <div className="flex min-h-0 grow flex-col gap-3 overflow-y-auto px-4 pb-4">
+            <Habitos oscuro={oscuro} listo={listo} compacto />
+          </div>
+        )}
 
         <BarraMovil pantalla={pantalla} onPantalla={setPantalla} onChat={() => setChatAbierto('voz')} />
 
@@ -272,7 +277,6 @@ export default function App() {
             oscuro={oscuro}
             onGuardar={alGuardar}
             onBorrar={alBorrar}
-          onBorrarSerie={alBorrarSerie}
             onBorrarSerie={alBorrarSerie}
             onCerrar={() => setModal(null)}
           />
@@ -335,6 +339,10 @@ export default function App() {
             </p>
           )}
         </div>
+      ) : seccion === 'habitos' ? (
+        <div className="flex min-w-0 grow flex-col gap-4 px-8 pb-7 pt-[26px]">
+          <Habitos oscuro={oscuro} listo={listo} />
+        </div>
       ) : (
         <Pendiente seccion={seccion} />
       )}
@@ -394,7 +402,6 @@ function BotonCabecera({ etiqueta, onClick, children, desactivado }) {
 
 function Pendiente({ seccion }) {
   const textos = {
-    habitos: ['Hábitos', 'Rachas de gimnasio y estudio. Llega en la fase 5.'],
     buscar: ['Buscar', 'Preguntarle a la IA por cualquier cosa que apuntaste. Llega con la fase 2.'],
   };
   const [titulo, detalle] = textos[seccion] ?? ['', ''];

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { hayFirebase } from '../config/firebase';
 import { establecerUsuario, migrarDesdeLocal } from '../services/eventosRepository';
+import { establecerUsuario as establecerUsuarioHabitos } from '../services/habitosRepository';
 import { observarSesion } from '../services/auth';
 
 /**
@@ -19,6 +20,7 @@ export function useAuth() {
   useEffect(() => {
     return observarSesion(async (nuevo) => {
       establecerUsuario(nuevo?.uid ?? null);
+      establecerUsuarioHabitos(nuevo?.uid ?? null);
       if (nuevo) await migrarDesdeLocal();
       setUsuario(nuevo);
       setComprobando(false);
