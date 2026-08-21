@@ -218,9 +218,66 @@ hablar de esta semana aunque estés mirando diciembre.
 - [x] **Fase 1** — Calendario, base de datos, alta y edición a mano
 - [x] **Fase 2** — El cerebro: Claude con herramientas, chat de texto
 - [x] **Fase 3** — Voz: hablarle y que conteste en voz alta
-- [ ] **Fase 4** — Avisos push al escritorio y briefing de los lunes
+- [x] **Desplegado** — Vercel + Firebase, sesión con Google, móvil
+- [ ] **Fase 4** — Avisos push y briefing de los lunes
 - [ ] **Fase 5** — Hábitos y rachas
 - [ ] **Fase 6** — Canal externo (Telegram o WhatsApp)
+
+## Próximos pasos
+
+### Fase 4 — Avisos push al iPhone
+
+Para que lleguen notificaciones a la pantalla de bloqueo hacen falta dos cosas
+en orden, y la primera es la que de verdad importa:
+
+1. **Que la app sea instalable.** Ahora mismo no lo es — falta un
+   `public/manifest.webmanifest` y un service worker. En iOS, Safari solo
+   entrega Web Push a apps instaladas en la pantalla de inicio (iOS 16.4+);
+   sin este paso, ningún push llegará nunca, en ningún punto del proceso.
+   `LONAVOICE/public/manifest.webmanifest` (otro proyecto tuyo) sirve de
+   referencia de partida.
+2. **Enviar los avisos.** Aquí hay una corrección sobre lo que se dijo al
+   principio: **no hace falta el plan Blaze de Firebase.** Eso era cierto
+   mientras el cerebro iba a vivir en Cloud Functions; ahora vive en Vercel.
+   Enviar una notificación por FCM (Firebase Cloud Messaging) solo necesita
+   llamar a su API REST con una cuenta de servicio — se puede hacer desde
+   cualquier función de `api/`, sin Cloud Functions de por medio. El único
+   coste real sería un **Vercel Cron** (gratis en el plan Hobby hasta cierto
+   límite) que dispare `api/briefing.js` los lunes por la mañana y otro que
+   repase "vence pronto" para los avisos de una hora antes.
+
+Con eso: briefing semanal de los lunes, y un aviso corto antes de cada cita de
+salud o entrega de universidad — que es justo lo que pediste al principio de
+todo.
+
+### Fase 6 — WhatsApp o Telegram
+
+Decisión ya tomada en su momento y que sigue en pie: **Telegram primero.**
+Gratis, sin verificación de negocio, notas de voz nativas, y puede escribirte
+sin las restricciones de ventana de 24h que tiene WhatsApp Cloud API para
+mensajes proactivos (el briefing del lunes necesita poder iniciar conversación
+él solo).
+
+El trabajo es una función más: `api/telegram.js` como webhook que recibe el
+mensaje de Telegram, transcribe si es audio, y llama a la misma
+`api/_cerebro.js::pensar()` que ya usa el chat — el cerebro no cambia, solo el
+tubo de entrada. Si más adelante quieres WhatsApp de verdad: Cloud API de
+Meta, con un número de teléfono que no sea tu WhatsApp personal (una SIM
+prepago sirve) y plantillas preaprobadas para poder escribir tú primero.
+
+### Otras mejoras a valorar
+
+- **Eventos recurrentes.** No existen en el esquema de datos: "medicación
+  todos los días" o "clase todos los martes" hoy hay que crearlos uno a uno.
+  Es el hueco más notorio para el uso real que describiste al principio.
+- **Confirmación antes de borrar.** El prompt le pide a la IA que pregunte
+  si hay duda, pero no hay red de seguridad en la interfaz si se equivoca.
+- **Deshacer la última acción de la IA**, por si interpreta mal algo.
+- **Hábitos** (fase 5): la pantalla ya está diseñada en
+  `design/Habitos.dc.html`, falta construirla — es independiente del resto.
+- **Buscar**: el icono ya está en el `Rail`, sin pantalla detrás.
+- **Recordatorios configurables** (ahora mismo "vence pronto" es fijo a
+  universidad y salud a 10 días vista).
 
 ## El asistente
 
@@ -232,7 +289,7 @@ lo que tengas cerca esos días — que es la mitad de la gracia de esto.
 Para cambiar de modelo, `ANTHROPIC_MODEL` en `server/.env`. **No es solo
 cambiar el nombre**: cada familia acepta una configuración distinta de
 razonamiento y mandarle a Haiku lo que espera Opus devuelve un error 400. Eso
-lo resuelve `server/src/modelo.js`, que traduce el modelo elegido a los
+lo resuelve `api/_modelo.js`, que traduce el modelo elegido a los
 parámetros que ese modelo entiende. Probados: `claude-haiku-4-5`,
 `claude-sonnet-5` y `claude-opus-5`.
 
