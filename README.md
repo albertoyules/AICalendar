@@ -315,46 +315,48 @@ iOS 16.4 o más nuevo). Ya lo dejé preparado (`public/manifest.webmanifest`,
 iconos, `apple-touch-icon`) — es Apple quien exige el paso de instalar, no
 hay forma de saltárselo.
 
-### Recordatorios a hora exacta (hábitos y eventos): Upstash QStash
+### Recordatorios a hora exacta de los hábitos: Upstash QStash
 
 Vercel Cron (lo que usan los avisos de fase 4) solo dispara una vez al día a
-una hora fija — no sirve para "el hábito de las 22:00" ni para "avísame 2h
-antes de la cita", que son horas por usuario/evento, no un horario fijo del
-despliegue. **Upstash QStash** sí lo permite y tiene tier gratuito (1.000
-mensajes/día, hasta 10 schedules recurrentes con precisión al minuto, y
-mensajes de una sola vez a hora exacta con hasta 7 días de antelación).
+una hora fija de todo el proyecto — no sirve para "avísame de este hábito a
+las 22:00" cuando cada hábito puede querer su propia hora. **Upstash QStash**
+sí lo permite y tiene tier gratuito (1.000 mensajes/día, hasta 10 *schedules*
+recurrentes con precisión al minuto). El código ya está escrito y en `main`;
+solo faltan las cuatro cosas de la lista de abajo, que solo puedes hacer tú.
 
-Repartido entre lo que puedo dejar escrito yo y lo que solo puedes hacer tú
-desde fuera de este repo:
+**Ya construido:**
+1. `api/_qstash.js` — cliente y verificador de firma de QStash, mismo patrón
+   perezoso que `firebaseAdmin()` en `_admin.js`.
+2. `api/qstash/recordatorio.js` — a donde llama QStash a la hora exacta.
+   Verifica la firma, relee el hábito en Firestore (por si cambió de nombre
+   desde que se programó el aviso) y manda el push con la misma función de
+   `api/_avisos.js` que ya usan los avisos de fase 4.
+3. `api/habitos/recordatorio.js` — a donde llama el navegador cuando creas,
+   editas o borras un hábito con aviso. Verifica tu sesión de Firebase (el uid
+   nunca se fía de lo que mande el navegador) y da de alta o retira el
+   *schedule* en QStash, con `CRON_TZ=Europe/Madrid` para que no haya que
+   tocar nada en el cambio de hora dos veces al año.
+4. En `ModalHabito.jsx`, la casilla "Avisarme cada día a esta hora" — se ve la
+   campanita con la hora al lado del hábito en la tabla si está activada.
 
-**Lo que hago yo, en código:**
-1. `api/qstash/recordatorio.js` — endpoint nuevo que verifica la firma de
-   QStash (con `@upstash/qstash`'s `verifySignature`) y llama a la misma
-   función de `api/_avisos.js` que ya manda los push de fase 4. No se toca el
-   cerebro ni el envío, solo quién lo dispara.
-2. En `habitosRepository.js` (crear/editar/borrar hábito) y en
-   `eventosRepository.js` (crear/editar/borrar evento), publicar o cancelar el
-   mensaje en QStash correspondiente cuando el objetivo cambie.
-3. Para hábitos con objetivo semanal (hora fija, recurrente): un *schedule* de
-   QStash con cron al minuto — no hace falta esperar a nada, se crea en el
-   momento en que guardas el hábito.
-4. Para recordatorios de eventos (hora suelta, más de 7 días vista a veces): el
-   cron diario que ya existe (`api/cron/diario.js`) revisa cada día qué
-   recordatorios entran ya en la ventana de 7 días y los publica en QStash con
-   su `Upstash-Not-Before` exacto.
-
-**Lo que tienes que hacer tú, fuera de aquí:**
+**Solo puedes hacerlo tú, fuera de este repo:**
 1. Crear cuenta gratis en [upstash.com](https://upstash.com) → QStash → copiar
    el `QSTASH_TOKEN` y las dos claves de firma (`QSTASH_CURRENT_SIGNING_KEY`,
-   `QSTASH_NEXT_SIGNING_KEY`).
-2. Pegar esas tres en las variables de entorno de Vercel (igual que
-   `CRON_SECRET`: solo en Vercel, nunca en el repo).
-3. Volver a desplegar. No hay panel que configurar más allá de eso — QStash no
-   necesita que definas nada por adelantado, los *schedules* y mensajes se
-   crean por código en cuanto tú creas un hábito o un recordatorio.
+   `QSTASH_NEXT_SIGNING_KEY`) — están todas en la misma pantalla.
+2. Añadir esas tres, más `APP_URL` (la URL de producción de esta app, tipo
+   `https://tu-app.vercel.app`, sin barra final — QStash necesita poder
+   llamarla desde fuera), en las variables de entorno de Vercel. Igual que
+   `CRON_SECRET`: solo en Vercel, nunca en el repo.
+3. Volver a desplegar. Después, `/api/salud?probar=1` dice si las cuatro están
+   bien puestas (dentro de `recordatoriosHabitos.qstash`).
+4. Activar la casilla en un hábito con hora — el *schedule* se crea solo, no
+   hay nada que configurar en la consola de Upstash.
 
-Cuando quieras que me ponga con esto, dilo y lo dejo construido — de momento
-solo está documentado el plan.
+**Lo que queda fuera, a propósito:** recordatorios sueltos por evento (tipo
+"avísame 2h antes de la cita") no están construidos todavía — necesitan antes
+decidir una interfaz para "cuánto antes" en `ModalEvento.jsx`, y el mecanismo
+sería algo distinto (un *schedule* recurrente no vale para una hora suelta que
+puede caer a más de 7 días vista). Dilo cuando lo quieras y lo miramos aparte.
 
 ### Fase 6 — WhatsApp o Telegram
 

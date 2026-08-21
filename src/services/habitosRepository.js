@@ -20,6 +20,7 @@ import {
 
 import { firestore, hayFirebase } from '../config/firebase';
 import { CATEGORIA_POR_DEFECTO } from '../config/categorias';
+import { idTokenActual } from './auth';
 
 const CLAVE_LOCAL = 'iacalendar.habitos';
 
@@ -51,7 +52,30 @@ export function normalizarHabito(bruto) {
     nombre: String(bruto.nombre ?? '').trim() || 'Sin nombre',
     categoria: bruto.categoria ?? CATEGORIA_POR_DEFECTO,
     objetivoSemanal: Math.min(7, Math.max(1, Number(bruto.objetivoSemanal) || 7)),
+    horaAviso: bruto.horaAviso || null,
   };
+}
+
+/**
+ * Da de alta o retira el aviso de un hábito en QStash, vía el servidor (el
+ * token de QStash no puede bajar al navegador). Es un extra sobre el hábito
+ * en sí: si esto falla — sin desplegar todavía, sin las variables de QStash
+ * puestas, sin red — el hábito se guarda igual, solo que sin aviso. Nunca
+ * debe tirar abajo el guardado del hábito por esto.
+ */
+async function sincronizarRecordatorio(habitoId, horaAviso) {
+  if (!enFirestore()) return;
+  try {
+    const idToken = await idTokenActual();
+    if (!idToken) return;
+    await fetch('/api/habitos/recordatorio', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken, habitoId, horaAviso }),
+    });
+  } catch (error) {
+    console.warn('[IA Calendar] no se ha podido sincronizar el aviso del hábito:', error);
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -110,6 +134,7 @@ export async function crearHabito(bruto) {
   }
 
   const ref = await addDoc(coleccionHabitos(), habito);
+  await sincronizarRecordatorio(ref.id, habito.horaAviso);
   return ref.id;
 }
 
@@ -119,6 +144,7 @@ export async function actualizarHabito(id, cambios) {
     return;
   }
   await updateDoc(documentoHabito(id), cambios);
+  if ('horaAviso' in cambios) await sincronizarRecordatorio(id, cambios.horaAviso);
 }
 
 export async function borrarHabito(id) {
@@ -127,6 +153,7 @@ export async function borrarHabito(id) {
     return;
   }
   await deleteDoc(documentoHabito(id));
+  await sincronizarRecordatorio(id, null);
 }
 
 /**

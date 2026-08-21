@@ -10,11 +10,19 @@ export default function ModalHabito({ habito, oscuro, onGuardar, onBorrar, onCer
   const [nombre, setNombre] = useState(habito?.nombre ?? '');
   const [categoriaId, setCategoriaId] = useState(habito?.categoria ?? 'random');
   const [objetivoSemanal, setObjetivoSemanal] = useState(habito?.objetivoSemanal ?? 7);
+  const [avisar, setAvisar] = useState(Boolean(habito?.horaAviso));
+  const [horaAviso, setHoraAviso] = useState(habito?.horaAviso ?? '20:00');
 
   const enviar = (e) => {
     e.preventDefault();
     if (!nombre.trim()) return;
-    onGuardar({ id: habito?.id, nombre: nombre.trim(), categoria: categoriaId, objetivoSemanal });
+    onGuardar({
+      id: habito?.id,
+      nombre: nombre.trim(),
+      categoria: categoriaId,
+      objetivoSemanal,
+      horaAviso: avisar ? horaAviso : null,
+    });
   };
 
   return (
@@ -100,6 +108,27 @@ export default function ModalHabito({ habito, oscuro, onGuardar, onBorrar, onCer
           <span className="text-[12px]" style={{ color: 'var(--tinta-tenue)' }}>
             {objetivoSemanal >= 7 ? 'Todos los días' : `${objetivoSemanal} veces por semana`}
           </span>
+        </div>
+
+        <div className="flex flex-col gap-2.5">
+          <label className="flex cursor-pointer items-center gap-2.5 text-[13.5px]" style={{ color: 'var(--tinta-media)' }}>
+            <input
+              type="checkbox"
+              checked={avisar}
+              onChange={(e) => setAvisar(e.target.checked)}
+              className="h-4 w-4 accent-current"
+            />
+            Avisarme cada día a esta hora
+          </label>
+          {avisar && (
+            <input
+              type="time"
+              value={horaAviso}
+              onChange={(e) => setHoraAviso(e.target.value)}
+              className="w-full rounded-[11px] px-4 py-2.5 text-[15px] outline-none"
+              style={{ background: 'var(--superficie-3)', border: '1px solid var(--borde)', color: 'var(--tinta)' }}
+            />
+          )}
         </div>
 
         <div className="flex items-center gap-3">

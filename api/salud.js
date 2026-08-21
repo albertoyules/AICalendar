@@ -108,18 +108,43 @@ function revisarCronSecret() {
   return { estado: 'PRESENTE', longitud: bruto.trim().length };
 }
 
+/** ¿Están las tres variables de QStash, para los avisos de hábitos a hora exacta? */
+function revisarQstash() {
+  const token = process.env.QSTASH_TOKEN;
+  const actual = process.env.QSTASH_CURRENT_SIGNING_KEY;
+  const siguiente = process.env.QSTASH_NEXT_SIGNING_KEY;
+  const url = process.env.APP_URL;
+
+  const faltan = [];
+  if (!token) faltan.push('QSTASH_TOKEN');
+  if (!actual) faltan.push('QSTASH_CURRENT_SIGNING_KEY');
+  if (!siguiente) faltan.push('QSTASH_NEXT_SIGNING_KEY');
+  if (!url) faltan.push('APP_URL');
+
+  if (faltan.length > 0) {
+    return {
+      estado: 'FALTA',
+      pista: `Faltan: ${faltan.join(', ')}. Las tres de QSTASH_ salen de la consola de Upstash (QStash > tu proyecto); ` +
+        'APP_URL es la URL de producción de esta app (https://tu-app.vercel.app, sin barra final).',
+    };
+  }
+  return { estado: 'PRESENTE' };
+}
+
 export default async function handler(req, res) {
   const probar = req.query?.probar === '1';
 
   const clave = revisarClave();
   const cuentaDeServicio = revisarCuentaDeServicio();
   const cronSecret = revisarCronSecret();
+  const qstash = revisarQstash();
 
   const informe = {
     servidor: 'en pie',
     modelo: MODELO,
     clave,
     avisosPush: { cuentaDeServicio, cronSecret },
+    recordatoriosHabitos: { qstash },
   };
 
   // La prueba real solo bajo petición: cada llamada gasta (poquísimo, pero gasta).

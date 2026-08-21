@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Check, Plus } from 'lucide-react';
+import { Bell, Check, Plus } from 'lucide-react';
 
 import ModalHabito from './ModalHabito';
 import { useHabitos } from '../hooks/useHabitos';
@@ -28,6 +28,7 @@ export default function Habitos({ oscuro, listo, compacto }) {
           nombre: datos.nombre,
           categoria: datos.categoria,
           objetivoSemanal: datos.objetivoSemanal,
+          horaAviso: datos.horaAviso,
         });
       } else {
         await crearHabito(datos);
@@ -230,8 +231,14 @@ function FilaHabito({ habito, dias, hoyClave, oscuro, compacto, primera, onEdita
               <div className="truncate text-[15px] font-semibold" style={{ color: 'var(--tinta)' }}>
                 {habito.nombre}
               </div>
-              <div className="mt-0.5 text-[12px]" style={{ color: 'var(--tinta-tenue)' }}>
+              <div className="mt-0.5 flex items-center gap-1 text-[12px]" style={{ color: 'var(--tinta-tenue)' }}>
                 {textoObjetivo(habito.objetivoSemanal)}
+                {habito.horaAviso && (
+                  <span className="flex items-center gap-0.5">
+                    <Bell size={11} strokeWidth={1.8} />
+                    {habito.horaAviso}
+                  </span>
+                )}
               </div>
             </div>
           </button>
@@ -254,8 +261,14 @@ function FilaHabito({ habito, dias, hoyClave, oscuro, compacto, primera, onEdita
           <div className="truncate text-[15px] font-semibold" style={{ color: 'var(--tinta)' }}>
             {habito.nombre}
           </div>
-          <div className="mt-0.5 text-[12px]" style={{ color: 'var(--tinta-tenue)' }}>
+          <div className="mt-0.5 flex items-center gap-1 text-[12px]" style={{ color: 'var(--tinta-tenue)' }}>
             {textoObjetivo(habito.objetivoSemanal)}
+            {habito.horaAviso && (
+              <span className="flex items-center gap-0.5">
+                <Bell size={11} strokeWidth={1.8} />
+                {habito.horaAviso}
+              </span>
+            )}
           </div>
         </div>
       </button>

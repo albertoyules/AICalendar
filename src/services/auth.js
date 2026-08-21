@@ -28,6 +28,11 @@ export function cerrarSesion() {
   return cerrarSesionFirebase(auth);
 }
 
+/** El idToken de la sesión actual, para autenticar llamadas al servidor. */
+export function idTokenActual() {
+  return auth.currentUser?.getIdToken() ?? Promise.resolve(null);
+}
+
 /** Avisa de los cambios de sesión. Devuelve la función para dejar de escuchar. */
 export function observarSesion(alCambiar) {
   if (!hayFirebase) {

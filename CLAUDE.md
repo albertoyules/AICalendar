@@ -164,13 +164,53 @@ Hechas: calendario (mes/semana/día), alta y edición manual, eventos
 recurrentes, asistente por texto y voz con herramientas, sesión con Google,
 Firestore por usuario, móvil instalable, avisos push (diario + semanal;
 código completo, pendiente de que el usuario complete 3 pasos manuales en
-Firebase/Vercel — ver README), despliegue en Vercel, hábitos con rachas.
+Firebase/Vercel — ver README), despliegue en Vercel, hábitos con rachas y
+recordatorio diario a hora exacta por hábito vía Upstash QStash (código
+completo, pendiente de que el usuario cree la cuenta gratuita — ver README).
 
 Sin construir: canal externo (WhatsApp/Telegram — decidido: Telegram primero,
-reutilizando `api/_cerebro.js::pensar()`), y recordatorios a hora exacta por
-hábito/evento vía Upstash QStash (plan escrito en el README, pendiente de que
-el usuario cree la cuenta gratuita). Detalle de cada uno en «Próximos pasos»
-del README.
+reutilizando `api/_cerebro.js::pensar()`), y recordatorios sueltos por evento
+(tipo "avísame 2h antes de la cita" — necesita antes decidir la interfaz de
+"cuánto antes" en `ModalEvento.jsx`; el mecanismo de QStash de los hábitos no
+sirve tal cual porque ahí la hora es fija y recurrente, no suelta). Detalle de
+cada uno en «Próximos pasos» del README.
+
+## QStash: quién dispara los avisos de hábito, y por qué no es Vercel Cron
+
+Los avisos de fase 4 (diario, semanal) usan Vercel Cron porque son "una vez al
+día, hora fija de todo el proyecto" — encaja perfecto. Un aviso de hábito a
+*su propia* hora no encaja: Vercel Hobby no permite más de un disparo diario
+por cron y la hora es la misma para cualquier cron que definas en
+`vercel.json`, no algo que puedas variar por usuario u objeto en tiempo de
+ejecución. Upstash QStash sí: sus *schedules* se crean y borran por código.
+
+Dos rutas nuevas en `api/`, **fuera** del par cerebro/servidor de siempre —
+QStash no tiene equivalente en `server/` porque necesita una URL pública de
+verdad, no puede llamar a tu localhost:
+
+- `api/habitos/recordatorio.js` — la llama el navegador (desde
+  `habitosRepository.js`) al crear/editar/borrar un hábito con aviso. Verifica
+  el idToken de Firebase con `admin.auth().verifyIdToken()` y saca el uid de
+  ahí, nunca del cuerpo de la petición — si no, cualquiera podría registrar
+  avisos a nombre de otro uid con solo saber el suyo. Da de alta o retira el
+  *schedule* en QStash con un id determinista (`idScheduleHabito()` en
+  `_qstash.js`): crear con el mismo id sobrescribe el anterior, así que
+  cambiar la hora de aviso de un hábito no dispara duplicados.
+- `api/qstash/recordatorio.js` — la llama QStash a la hora programada.
+  Verifica la firma con `Receiver` de `@upstash/qstash` (nunca te fíes de una
+  petición que dice venir de QStash sin comprobarlo) y relee el hábito en
+  Firestore antes de mandar el push, en vez de guardar su nombre en el propio
+  *schedule* — así si le cambias el nombre después de programar el aviso,
+  llega el nombre nuevo.
+
+Toda la identificación (uid, habitoId) viaja en la URL de destino del
+*schedule*, no en un cuerpo JSON — evita la ambigüedad de qué acepta la API de
+*schedules* de QStash como body, y de paso simplifica la verificación de
+firma (con cuerpo vacío no hay nada que serializar mal).
+
+`APP_URL` es una variable nueva, solo para esto: la URL de producción estable
+de la app. No uses `VERCEL_URL` (esa cambia con cada despliegue) — un
+*schedule* de hábito vive mucho más que un despliegue.
 
 ## Hábitos: un documento por hábito, sin subcolección de marcas
 
