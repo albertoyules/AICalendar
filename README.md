@@ -386,6 +386,21 @@ tubo de entrada. Si más adelante quieres WhatsApp de verdad: Cloud API de
 Meta, con un número de teléfono que no sea tu WhatsApp personal (una SIM
 prepago sirve) y plantillas preaprobadas para poder escribir tú primero.
 
+### Bugs conocidos
+
+- **El aviso de hábito llega duplicado.** Confirmado en pruebas: llega dos
+  veces, casi a la vez, tanto en móvil como en ordenador. El candado
+  `ultimoAvisoEnviado` en `api/qstash/recordatorio.js` no lo arregló porque es
+  "leer y luego escribir", no atómico — si QStash invoca la función dos veces
+  casi a la vez (no un reintento tardío, sino algo prácticamente simultáneo),
+  las dos lecturas pasan el candado antes de que ninguna de las dos escrituras
+  llegue a tiempo. El arreglo de verdad es un "claim" atómico: un documento
+  centinela por día (p. ej. `usuarios/{uid}/habitos/{id}/avisos/{fecha}`)
+  creado con `.create()` de Firestore Admin — ese método falla con
+  `ALREADY_EXISTS` si el documento ya existe, así que solo una de las dos
+  invocaciones concurrentes puede "ganar" y mandar el push. No es urgente (el
+  usuario lo puede vivir con avisos duplicados por ahora); pendiente de hacer.
+
 ### Otras mejoras a valorar
 
 - **Confirmación antes de borrar.** El prompt le pide a la IA que pregunte
