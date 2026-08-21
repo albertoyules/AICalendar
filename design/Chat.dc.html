@@ -1,0 +1,115 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #484188; text-decoration: none; }
+    a:hover { color: #1D1A15; }
+    .ico { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  </style>
+</helmet>
+
+<div style="display: flex; flex-direction: column; width: 480px; height: 880px; background: #F7F4EE; color: #1D1A15; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 14px; overflow: hidden;">
+
+  <!-- cabecera -->
+  <div style="padding: 22px 24px 16px; border-bottom: 1px solid #E5DFD6; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;">
+    <div style="display: flex; align-items: center; gap: 9px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" style="fill: #1D1A15;"><path d="M12 2.6l2.05 5.9 5.9 2.05-5.9 2.05L12 18.5l-2.05-5.9L4.05 10.55l5.9-2.05z"></path></svg>
+      <span style="font-size: 15px; font-weight: 600;">Asistente</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #8B877F;">
+      <span style="width: 6px; height: 6px; border-radius: 50%; background: #008e5f;"></span>
+      <span>Escuchando</span>
+    </div>
+  </div>
+
+  <!-- conversacion -->
+  <div style="flex-grow: 1; padding: 20px 24px; display: flex; flex-direction: column; justify-content: flex-end; gap: 20px; overflow: hidden;">
+
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="flex-grow: 1; height: 1px; background: #E5DFD6;"></div>
+      <span style="font-size: 11px; color: #8B877F; letter-spacing: 0.05em; text-transform: uppercase;">Lunes 21</span>
+      <div style="flex-grow: 1; height: 1px; background: #E5DFD6;"></div>
+    </div>
+
+    <!-- audio del usuario -->
+    <div style="display: flex; flex-direction: column; gap: 7px; align-items: flex-end;">
+      <div style="background: #1D1A15; border-radius: 16px 16px 5px 16px; padding: 13px 16px; display: flex; align-items: center; gap: 13px;">
+        <div style="width: 30px; height: 30px; border-radius: 50%; background: #F3EFE7; color: #1D1A15; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="12" height="12" viewBox="0 0 24 24" style="fill: currentColor;"><path d="M7 4.5l12 7.5-12 7.5z"></path></svg>
+        </div>
+        <div style="display: flex; align-items: center; gap: 2.5px; height: 26px;"><span style="width: 2.5px; height: 3px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span><span style="width: 2.5px; height: 7px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span><span style="width: 2.5px; height: 5px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span><span style="width: 2.5px; height: 6px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span><span style="width: 2.5px; height: 14px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span><span style="width: 2.5px; height: 10px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span><span style="width: 2.5px; height: 19px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span><span style="width: 2.5px; height: 10px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span><span style="width: 2.5px; height: 11px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span><span style="width: 2.5px; height: 18px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span><span style="width: 2.5px; height: 16px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span><span style="width: 2.5px; height: 24px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span><span style="width: 2.5px; height: 13px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span><span style="width: 2.5px; height: 13px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span><span style="width: 2.5px; height: 18px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span><span style="width: 2.5px; height: 19px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span><span style="width: 2.5px; height: 24px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span><span style="width: 2.5px; height: 15px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span><span style="width: 2.5px; height: 14px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span><span style="width: 2.5px; height: 15px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span><span style="width: 2.5px; height: 18px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span><span style="width: 2.5px; height: 20px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span><span style="width: 2.5px; height: 14px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span><span style="width: 2.5px; height: 12px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span><span style="width: 2.5px; height: 11px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span><span style="width: 2.5px; height: 13px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span><span style="width: 2.5px; height: 12px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span><span style="width: 2.5px; height: 8px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span><span style="width: 2.5px; height: 5px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span><span style="width: 2.5px; height: 3px; border-radius: 2px; background: #8B857C; flex-shrink: 0;"></span></div>
+        <span style="font-size: 11.5px; color: #9A958C; font-variant-numeric: tabular-nums;">0:07</span>
+      </div>
+      <div style="max-width: 330px; text-align: right; font-size: 12.5px; line-height: 1.5; color: #8B877F; font-style: italic; padding-right: 4px;">&laquo;tengo tratamiento mañana a las diez, y creo que esa semana entregaba algo de la uni&raquo;</div>
+    </div>
+
+    <!-- respuesta de la IA -->
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+
+      <div style="background: #E9E4DA; border-radius: 16px 16px 16px 5px; padding: 14px 16px; font-size: 14px; line-height: 1.55;">Apuntado. Y sí, tenías razón con lo de la uni.</div>
+
+      <!-- evento creado -->
+      <div style="border: 1px solid #bee5d2; background: #dff2e9; border-radius: 13px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;">
+          <div style="display: flex; flex-direction: column; gap: 3px;">
+            <span style="font-size: 15px; font-weight: 600; color: #00603d;">Tratamiento</span>
+            <span style="font-size: 12.5px; color: #008e5f;">Martes 22 de septiembre &middot; 10:00 &ndash; 11:00</span>
+          </div>
+          <div style="width: 24px; height: 24px; border-radius: 50%; background: #008e5f; color: #F7F4EE; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="13" height="13" viewBox="0 0 24 24" class="ico" style="stroke-width: 2.4;"><path d="M4 12.5l5 5L20 6.5"></path></svg>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="background: #F7F4EE; border: 1px solid #bee5d2; border-radius: 999px; padding: 3px 10px; font-size: 11.5px; font-weight: 500; color: #00603d;">Salud</span>
+          <span style="background: #F7F4EE; border: 1px solid #bee5d2; border-radius: 999px; padding: 3px 10px; font-size: 11.5px; font-weight: 500; color: #00603d;">Aviso 1 h antes</span>
+        </div>
+      </div>
+
+      <!-- aviso -->
+      <div style="background: #E9E4DA; border-radius: 16px; padding: 14px 16px; font-size: 14px; line-height: 1.55;">El <strong style="font-weight: 600;">jueves 24</strong> entregas la Práctica 1 de Bases de Datos, y ese día trabajas por la tarde. ¿Te reservo el miércoles de 10:00 a 13:00 para terminarla?</div>
+
+      <!-- respuesta hablada -->
+      <div style="display: flex; align-items: center; gap: 12px; border: 1px solid #DCD6CB; border-radius: 999px; padding: 8px 16px 8px 10px; align-self: flex-start;">
+        <div style="width: 28px; height: 28px; border-radius: 50%; background: #1D1A15; color: #F3EFE7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="11" height="11" viewBox="0 0 24 24" style="fill: currentColor;"><path d="M7 4.5l12 7.5-12 7.5z"></path></svg>
+        </div>
+        <div style="display: flex; align-items: center; gap: 2.5px; height: 18px;"><span style="width: 2.5px; height: 3px; border-radius: 2px; background: #B5B0A8; flex-shrink: 0;"></span><span style="width: 2.5px; height: 5px; border-radius: 2px; background: #B5B0A8; flex-shrink: 0;"></span><span style="width: 2.5px; height: 4px; border-radius: 2px; background: #B5B0A8; flex-shrink: 0;"></span><span style="width: 2.5px; height: 5px; border-radius: 2px; background: #B5B0A8; flex-shrink: 0;"></span><span style="width: 2.5px; height: 11px; border-radius: 2px; background: #B5B0A8; flex-shrink: 0;"></span><span style="width: 2.5px; height: 8px; border-radius: 2px; background: #B5B0A8; flex-shrink: 0;"></span><span style="width: 2.5px; height: 14px; border-radius: 2px; background: #B5B0A8; flex-shrink: 0;"></span><span style="width: 2.5px; height: 7px; border-radius: 2px; background: #B5B0A8; flex-shrink: 0;"></span><span style="width: 2.5px; height: 8px; border-radius: 2px; background: #B5B0A8; flex-shrink: 0;"></span><span style="width: 2.5px; height: 13px; border-radius: 2px; background: #B5B0A8; flex-shrink: 0;"></span><span style="width: 2.5px; height: 11px; border-radius: 2px; background: #B5B0A8; flex-shrink: 0;"></span><span style="width: 2.5px; height: 17px; border-radius: 2px; background: #B5B0A8; flex-shrink: 0;"></span><span style="width: 2.5px; height: 9px; border-radius: 2px; background: #B5B0A8; flex-shrink: 0;"></span><span style="width: 2.5px; height: 9px; border-radius: 2px; background: #B5B0A8; flex-shrink: 0;"></span><span style="width: 2.5px; height: 12px; border-radius: 2px; background: #B5B0A8; flex-shrink: 0;"></span><span style="width: 2.5px; height: 12px; border-radius: 2px; background: #B5B0A8; flex-shrink: 0;"></span><span style="width: 2.5px; height: 15px; border-radius: 2px; background: #B5B0A8; flex-shrink: 0;"></span><span style="width: 2.5px; height: 9px; border-radius: 2px; background: #B5B0A8; flex-shrink: 0;"></span><span style="width: 2.5px; height: 8px; border-radius: 2px; background: #B5B0A8; flex-shrink: 0;"></span><span style="width: 2.5px; height: 8px; border-radius: 2px; background: #B5B0A8; flex-shrink: 0;"></span><span style="width: 2.5px; height: 8px; border-radius: 2px; background: #B5B0A8; flex-shrink: 0;"></span><span style="width: 2.5px; height: 8px; border-radius: 2px; background: #B5B0A8; flex-shrink: 0;"></span><span style="width: 2.5px; height: 4px; border-radius: 2px; background: #B5B0A8; flex-shrink: 0;"></span><span style="width: 2.5px; height: 3px; border-radius: 2px; background: #B5B0A8; flex-shrink: 0;"></span></div>
+        <span style="font-size: 11.5px; color: #8B877F; font-variant-numeric: tabular-nums;">0:11</span>
+      </div>
+    </div>
+
+    <!-- acciones -->
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      <div style="background: #1D1A15; color: #F3EFE7; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 500;">Sí, resérvalo</div>
+      <div style="border: 1px solid #DCD6CB; border-radius: 999px; padding: 8px 16px; font-size: 13px; color: #504D46;">Mejor el martes</div>
+      <div style="border: 1px solid #DCD6CB; border-radius: 999px; padding: 8px 16px; font-size: 13px; color: #504D46;">Déjalo</div>
+    </div>
+  </div>
+
+  <!-- barra de entrada, grabando -->
+  <div style="padding: 16px 20px 22px; border-top: 1px solid #E5DFD6; flex-shrink: 0;">
+    <div style="display: flex; align-items: center; gap: 14px; background: #FDF3F2; border: 1px solid #F0D4D1; border-radius: 999px; padding: 9px 9px 9px 18px;">
+      <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+        <span style="width: 8px; height: 8px; border-radius: 50%; background: #c74b47;"></span>
+        <span style="font-size: 12.5px; font-weight: 600; color: #c74b47; font-variant-numeric: tabular-nums;">0:03</span>
+      </div>
+      <div style="flex-grow: 1; display: flex; justify-content: center;"><div style="display: flex; align-items: center; gap: 3px; height: 22px;"><span style="width: 2.5px; height: 3px; border-radius: 2px; background: #E0A9A5; flex-shrink: 0;"></span><span style="width: 2.5px; height: 6px; border-radius: 2px; background: #E0A9A5; flex-shrink: 0;"></span><span style="width: 2.5px; height: 5px; border-radius: 2px; background: #E0A9A5; flex-shrink: 0;"></span><span style="width: 2.5px; height: 6px; border-radius: 2px; background: #E0A9A5; flex-shrink: 0;"></span><span style="width: 2.5px; height: 12px; border-radius: 2px; background: #E0A9A5; flex-shrink: 0;"></span><span style="width: 2.5px; height: 9px; border-radius: 2px; background: #E0A9A5; flex-shrink: 0;"></span><span style="width: 2.5px; height: 17px; border-radius: 2px; background: #E0A9A5; flex-shrink: 0;"></span><span style="width: 2.5px; height: 9px; border-radius: 2px; background: #E0A9A5; flex-shrink: 0;"></span><span style="width: 2.5px; height: 9px; border-radius: 2px; background: #E0A9A5; flex-shrink: 0;"></span><span style="width: 2.5px; height: 16px; border-radius: 2px; background: #E0A9A5; flex-shrink: 0;"></span><span style="width: 2.5px; height: 14px; border-radius: 2px; background: #E0A9A5; flex-shrink: 0;"></span><span style="width: 2.5px; height: 21px; border-radius: 2px; background: #E0A9A5; flex-shrink: 0;"></span><span style="width: 2.5px; height: 11px; border-radius: 2px; background: #E0A9A5; flex-shrink: 0;"></span><span style="width: 2.5px; height: 11px; border-radius: 2px; background: #E0A9A5; flex-shrink: 0;"></span><span style="width: 2.5px; height: 15px; border-radius: 2px; background: #E0A9A5; flex-shrink: 0;"></span><span style="width: 2.5px; height: 15px; border-radius: 2px; background: #E0A9A5; flex-shrink: 0;"></span><span style="width: 2.5px; height: 20px; border-radius: 2px; background: #E0A9A5; flex-shrink: 0;"></span><span style="width: 2.5px; height: 11px; border-radius: 2px; background: #E0A9A5; flex-shrink: 0;"></span><span style="width: 2.5px; height: 11px; border-radius: 2px; background: #E0A9A5; flex-shrink: 0;"></span><span style="width: 2.5px; height: 11px; border-radius: 2px; background: #E0A9A5; flex-shrink: 0;"></span><span style="width: 2.5px; height: 13px; border-radius: 2px; background: #E0A9A5; flex-shrink: 0;"></span><span style="width: 2.5px; height: 13px; border-radius: 2px; background: #E0A9A5; flex-shrink: 0;"></span><span style="width: 2.5px; height: 8px; border-radius: 2px; background: #E0A9A5; flex-shrink: 0;"></span><span style="width: 2.5px; height: 6px; border-radius: 2px; background: #E0A9A5; flex-shrink: 0;"></span><span style="width: 2.5px; height: 4px; border-radius: 2px; background: #E0A9A5; flex-shrink: 0;"></span><span style="width: 2.5px; height: 3px; border-radius: 2px; background: #E0A9A5; flex-shrink: 0;"></span></div></div>
+      <div style="width: 40px; height: 40px; border-radius: 50%; background: #c74b47; color: #F7F4EE; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="18" height="18" viewBox="0 0 24 24" class="ico"><rect x="9" y="2.5" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path></svg>
+      </div>
+    </div>
+    <div style="text-align: center; margin-top: 10px; font-size: 11.5px; color: #8B877F;">Suelta para enviar &middot; desliza para cancelar</div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

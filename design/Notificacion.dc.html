@@ -1,0 +1,77 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #484188; text-decoration: none; }
+    a:hover { color: #1D1A15; }
+    .ico { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  </style>
+</helmet>
+
+<div style="width: 720px; height: 460px; box-sizing: border-box; padding: 46px 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; font-family: 'Instrument Sans', system-ui, sans-serif; color: #1D1A15; background: radial-gradient(120% 90% at 50% 0%, #EDE7DC 0%, #E0D8CC 55%, #D6CDBF 100%); overflow: hidden;">
+
+  <!-- briefing del lunes -->
+  <div style="width: 408px; background: rgba(247,244,238,0.97); border: 1px solid rgba(247,244,238,0.92); border-radius: 17px; box-shadow: 0 14px 40px rgba(50,42,32,0.20), 0 2px 6px rgba(50,42,32,0.10); padding: 16px 18px 15px; display: flex; flex-direction: column; gap: 12px;">
+
+    <div style="display: flex; align-items: center; gap: 9px;">
+      <div style="width: 20px; height: 20px; border-radius: 6px; background: #1D1A15; color: #EFEAE1; display: flex; align-items: center; justify-content: center; font-family: 'Instrument Serif', Georgia, serif; font-size: 12px; line-height: 1; flex-shrink: 0;">i</div>
+      <span style="font-size: 11.5px; font-weight: 600; letter-spacing: 0.01em; color: #504D46;">IA Calendar</span>
+      <span style="flex-grow: 1;"></span>
+      <span style="font-size: 11.5px; color: #8B877F;">ahora</span>
+    </div>
+
+    <div>
+      <div style="font-size: 15px; font-weight: 600; letter-spacing: -0.005em;">Tu semana, en tres líneas</div>
+      <div style="font-size: 13.5px; line-height: 1.55; color: #504D46; margin-top: 7px;">Mañana tratamiento a las 10:00. El jueves entregas la Práctica 1 y trabajas por la tarde. El sábado, cumple de Marta.</div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 16px; padding-top: 2px;">
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <span style="width: 7px; height: 7px; border-radius: 50%; background: #008e5f;"></span>
+        <span style="font-size: 11.5px; color: #747068;">1 salud</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <span style="width: 7px; height: 7px; border-radius: 50%; background: #6e65c5;"></span>
+        <span style="font-size: 11.5px; color: #747068;">3 universidad</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <span style="width: 7px; height: 7px; border-radius: 50%; background: #0083b4;"></span>
+        <span style="font-size: 11.5px; color: #747068;">2 turnos</span>
+      </div>
+    </div>
+
+    <div style="height: 1px; background: #E9E4DA;"></div>
+
+    <div style="display: flex; gap: 8px;">
+      <div style="flex-grow: 1; text-align: center; background: #1D1A15; color: #F3EFE7; border-radius: 9px; padding: 8px 0; font-size: 12.5px; font-weight: 500;">Ver la semana</div>
+      <div style="flex-grow: 1; text-align: center; border: 1px solid #DCD6CB; border-radius: 9px; padding: 8px 0; font-size: 12.5px; font-weight: 500; color: #504D46; display: flex; align-items: center; justify-content: center; gap: 7px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" style="fill: currentColor;"><path d="M7 4.5l12 7.5-12 7.5z"></path></svg>
+        <span>Escuchar</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- recordatorio corto, apilado detras -->
+  <div style="width: 380px; background: rgba(247,244,238,0.86); border-radius: 15px; box-shadow: 0 8px 22px rgba(50,42,32,0.13); padding: 13px 16px; display: flex; align-items: center; gap: 12px;">
+    <div style="width: 20px; height: 20px; border-radius: 6px; background: #008e5f; color: #F7F4EE; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+      <svg width="12" height="12" viewBox="0 0 24 24" class="ico" style="stroke-width: 2;"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 1.8"></path></svg>
+    </div>
+    <div style="flex-grow: 1; min-width: 0;">
+      <div style="font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">En 1 hora &middot; Tratamiento</div>
+      <div style="font-size: 11.5px; color: #747068; margin-top: 1px;">Martes 22 a las 10:00</div>
+    </div>
+    <span style="font-size: 11.5px; color: #8B877F; flex-shrink: 0;">9:00</span>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

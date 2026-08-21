@@ -1,0 +1,30 @@
+{
+  "name": "iacalendar",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:lan": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview",
+    "dev:all": "node scripts/dev.js",
+    "dev:server": "npm run dev --prefix server",
+    "setup": "npm install && npm install --prefix server",
+    "dev:movil": "node scripts/dev.js --host",
+    "reglas": "npx --yes firebase-tools deploy --only firestore:rules"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.72.0",
+    "firebase": "^11.1.0",
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "tailwindcss": "^4.0.0",
+    "vite": "^6.0.7"
+  }
+}

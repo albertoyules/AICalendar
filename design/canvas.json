@@ -1,0 +1,34 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html",         "x": 0,    "y": 0,    "w": 1440, "h": 900, "title": "Mes · escritorio" },
+    { "file": "Semana.dc.html",       "x": 1560, "y": 0,    "w": 1440, "h": 900, "title": "Semana · modo oscuro" },
+    { "file": "Chat.dc.html",         "x": 0,    "y": 1020, "w": 480,  "h": 880, "title": "Chat de voz · detalle" },
+    { "file": "Movil.dc.html",        "x": 600,  "y": 1020, "w": 390,  "h": 844, "title": "Móvil · agenda del día" },
+    { "file": "Habitos.dc.html",      "x": 1090, "y": 1020, "w": 1040, "h": 760, "title": "Hábitos y rachas" },
+    { "file": "Notificacion.dc.html", "x": 2230, "y": 1020, "w": 720,  "h": 460, "title": "Aviso del lunes" }
+  ],
+  "annotations": [
+    {
+      "id": "direccion",
+      "x": 0,
+      "y": -210,
+      "w": 620,
+      "text": "Dirección visual\n\nUn solo color por categoría y nada más: el resto es tinta sobre papel crema. Nada de blanco puro: cansa la vista en pantalla grande. Tipografía Instrument Serif para fechas y títulos, Instrument Sans para todo lo demás.\n\nLos cuatro colores son un mismo tono en cuatro matices (misma luminosidad y saturación, distinto matiz), así ninguno grita más que otro."
+    },
+    {
+      "id": "oscuro",
+      "x": 1560,
+      "y": -210,
+      "w": 620,
+      "text": "Modo oscuro\n\nLa vista de semana está en oscuro a propósito, para que veas los dos temas sin duplicar pantallas. Las mismas cuatro categorías, subidas de luminosidad para que se lean sobre fondo negro.\n\nLa línea roja del lunes es la hora actual."
+    },
+    {
+      "id": "avisos",
+      "x": 2230,
+      "y": 1540,
+      "w": 720,
+      "text": "Avisos\n\nArriba, el briefing del lunes por la mañana; abajo, un recordatorio corto una hora antes.\n\nEn Mac y Windows llegan aunque tengas la pestaña cerrada. En el iPhone hace falta que instales la app en la pantalla de inicio: es un requisito de Apple, no del diseño."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

@@ -1,0 +1,114 @@
+@import 'tailwindcss';
+
+/*
+ * Paleta: un color por categoria y el resto tinta sobre papel calido.
+ * Los cuatro colores de categoria son el mismo tono en cuatro matices
+ * (misma luminosidad y saturacion en oklch), asi ninguno pesa mas que otro.
+ */
+@theme {
+  --font-sans: 'Instrument Sans', system-ui, sans-serif;
+  --font-serif: 'Instrument Serif', Georgia, serif;
+}
+
+:root {
+  color-scheme: light;
+
+  /*
+   * Crema, no blanco. Las superficies eran blanco puro y en una pantalla
+   * grande eso deslumbra: aqui bajan a #f7f4ee, un 10% menos de luminancia,
+   * y el fondo las acompana. El texto sigue a 15:1 de contraste.
+   */
+  --papel: #efeae1;
+  --superficie: #f7f4ee;
+  --superficie-2: #f3efe7;
+  --superficie-3: #e9e4da;
+  --borde: #dcd6cb;
+  --borde-suave: #e5dfd6;
+  --tinta: #1d1a15;
+  --tinta-media: #504d46;
+  --tinta-suave: #747068;
+  --tinta-tenue: #8b877f;
+  --tinta-fantasma: #b5b0a8;
+  --ahora: #c74b47;
+  --eco-fondo: #faf1ee;
+  --eco-borde: #eed6cf;
+  --sombra-modal: 0 20px 60px rgba(29, 26, 22, 0.18);
+}
+
+.oscuro {
+  color-scheme: dark;
+
+  --papel: #13100d;
+  --superficie: #1a1713;
+  --superficie-2: #1c1915;
+  --superficie-3: #221e19;
+  --borde: #262119;
+  --borde-suave: #221e19;
+  --tinta: #f0eeeb;
+  --tinta-media: #b2ada7;
+  --tinta-suave: #8a857e;
+  --tinta-tenue: #6e6960;
+  --tinta-fantasma: #565149;
+  --ahora: #ed756e;
+  --eco-fondo: #2c1c18;
+  --eco-borde: #4a2c26;
+  --sombra-modal: 0 20px 60px rgba(0, 0, 0, 0.55);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    margin: 0;
+    background: var(--papel);
+    color: var(--tinta);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: none;
+  }
+
+  /* Por debajo de 16px iOS Safari hace zoom al enfocar un campo. */
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
+  ::selection {
+    background: var(--tinta);
+    color: var(--papel);
+  }
+}
+
+/* Barras de scroll discretas: en el calendario se ven todo el rato. */
+@layer utilities {
+  .scroll-fino {
+    scrollbar-width: thin;
+    scrollbar-color: var(--borde) transparent;
+  }
+  .scroll-fino::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scroll-fino::-webkit-scrollbar-thumb {
+    background: var(--borde);
+    border-radius: 4px;
+  }
+  .scroll-fino::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .numeros-tabulares {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Hueco de la barra de gestos del iPhone y del notch. */
+  .seguro-abajo {
+    padding-bottom: max(env(safe-area-inset-bottom), 16px);
+  }
+  .seguro-arriba {
+    padding-top: max(env(safe-area-inset-top), 12px);
+  }
+}

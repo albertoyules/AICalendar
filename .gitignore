@@ -1,0 +1,13 @@
+node_modules
+dist
+.DS_Store
+.vercel
+
+# Nada de ficheros de entorno, salvo las plantillas de ejemplo.
+# Aquí viven la clave de Anthropic y la configuración de Firebase.
+.env
+.env.*
+!.env.example
+
+# El lienzo de diseño se genera desde los .dc.html; no hace falta versionarlo.
+design/ia-calendar.html

@@ -1,0 +1,122 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #484188; text-decoration: none; }
+    a:hover { color: #1D1A15; }
+    .ico { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  </style>
+</helmet>
+
+<div style="display: flex; flex-direction: column; width: 390px; height: 844px; background: #EFEAE1; color: #1D1A15; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 14px; overflow: hidden;">
+
+  <!-- espacio reservado para la barra de estado real del sistema -->
+  <div style="height: 54px; flex-shrink: 0;"></div>
+
+  <div style="flex-grow: 1; padding: 0 20px; display: flex; flex-direction: column; gap: 18px; overflow: hidden;">
+
+    <!-- fecha -->
+    <div style="display: flex; align-items: flex-start; justify-content: space-between;">
+      <div>
+        <div style="font-family: 'Instrument Serif', Georgia, serif; font-size: 34px; line-height: 1.05; letter-spacing: -0.01em;">Lunes 21</div>
+        <div style="font-size: 13px; color: #8B877F; margin-top: 3px;">septiembre &middot; semana 39</div>
+      </div>
+      <div style="width: 38px; height: 38px; border-radius: 50%; background: #DCD6CB; color: #747068; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 600;">CY</div>
+    </div>
+
+    <!-- resumen de la IA -->
+    <div style="background: #F7F4EE; border: 1px solid #DCD6CB; border-radius: 15px; padding: 15px 16px; display: flex; gap: 12px;">
+      <svg width="17" height="17" viewBox="0 0 24 24" style="fill: #1D1A15; flex-shrink: 0; margin-top: 2px;"><path d="M12 2.6l2.05 5.9 5.9 2.05-5.9 2.05L12 18.5l-2.05-5.9L4.05 10.55l5.9-2.05z"></path></svg>
+      <div style="font-size: 13.5px; line-height: 1.55;">Día tranquilo. Te queda el gimnasio a las 18:30. La <strong style="font-weight: 600;">Práctica 1</strong> vence el jueves.</div>
+    </div>
+
+    <!-- agenda -->
+    <div style="display: flex; flex-direction: column; gap: 2px;">
+
+      <!-- pasado -->
+      <div style="display: flex; gap: 14px;">
+        <div style="width: 44px; flex-shrink: 0; text-align: right; padding-top: 14px; font-size: 12.5px; color: #B5B0A8; font-variant-numeric: tabular-nums;">09:00</div>
+        <div style="flex-grow: 1; display: flex; gap: 12px; align-items: stretch;">
+          <div style="width: 3px; border-radius: 2px; background: #E4E2F2; flex-shrink: 0;"></div>
+          <div style="flex-grow: 1; padding: 12px 0 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+            <div>
+              <div style="font-size: 14.5px; font-weight: 500; color: #9A958C; text-decoration: line-through;">Bases de Datos</div>
+              <div style="font-size: 12px; color: #B5B0A8; margin-top: 2px;">Aula 3.2 &middot; 2 h</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" class="ico" style="color: #B5B0A8; stroke-width: 2;"><path d="M4 12.5l5 5L20 6.5"></path></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- ahora -->
+      <div style="display: flex; gap: 14px; align-items: center; padding: 6px 0;">
+        <div style="width: 44px; flex-shrink: 0; text-align: right; font-size: 11px; font-weight: 600; color: #c74b47; letter-spacing: 0.04em;">14:30</div>
+        <div style="flex-grow: 1; display: flex; align-items: center; gap: 8px;">
+          <span style="width: 7px; height: 7px; border-radius: 50%; background: #c74b47; flex-shrink: 0;"></span>
+          <div style="flex-grow: 1; height: 1px; background: #EDCFCC;"></div>
+        </div>
+      </div>
+
+      <!-- proximo -->
+      <div style="display: flex; gap: 14px;">
+        <div style="width: 44px; flex-shrink: 0; text-align: right; padding-top: 15px; font-size: 12.5px; color: #747068; font-variant-numeric: tabular-nums;">18:30</div>
+        <div style="flex-grow: 1; background: #F7F4EE; border: 1px solid #DCD6CB; border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+          <div>
+            <div style="font-size: 15px; font-weight: 600;">Gimnasio</div>
+            <div style="font-size: 12.5px; color: #747068; margin-top: 2px;">Racha de 4 días</div>
+          </div>
+          <div style="width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid #DCD6CB; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #B5B0A8;">
+            <svg width="16" height="16" viewBox="0 0 24 24" class="ico" style="stroke-width: 2;"><path d="M4 12.5l5 5L20 6.5"></path></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- vence pronto -->
+    <div>
+      <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: #8B877F; margin-bottom: 9px;">Vence pronto</div>
+      <div style="background: #ebebfd; border: 1px solid #d6d6f9; border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+        <div>
+          <div style="font-size: 14.5px; font-weight: 600; color: #484188;">Práctica 1 &middot; Bases de Datos</div>
+          <div style="font-size: 12.5px; color: #6e65c5; margin-top: 2px;">Jueves 24 a las 23:59</div>
+        </div>
+        <div style="background: #F7F4EE; border-radius: 999px; padding: 5px 11px; font-size: 11.5px; font-weight: 600; color: #484188; flex-shrink: 0;">3 días</div>
+      </div>
+    </div>
+
+    <div style="flex-grow: 1;"></div>
+  </div>
+
+  <!-- micro + navegacion -->
+  <div style="flex-shrink: 0; padding: 0 20px 26px; display: flex; align-items: center; justify-content: space-between; gap: 20px;">
+
+    <div style="width: 56px; height: 56px; border-radius: 17px; background: #F7F4EE; border: 1px solid #DCD6CB; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: #1D1A15;">
+      <svg width="20" height="20" viewBox="0 0 24 24" class="ico"><rect x="3" y="4.5" width="18" height="16" rx="2.5"></rect><path d="M3 9.5h18M8 2.5v4M16 2.5v4"></path></svg>
+      <span style="font-size: 9.5px; font-weight: 500; letter-spacing: 0.02em;">Mes</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 9px;">
+      <div style="width: 76px; height: 76px; border-radius: 50%; background: #1D1A15; color: #F3EFE7; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 20px rgba(29,26,22,0.22);">
+        <svg width="30" height="30" viewBox="0 0 24 24" class="ico" style="stroke-width: 1.5;"><rect x="9" y="2.5" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path></svg>
+      </div>
+      <span style="font-size: 11.5px; color: #8B877F;">Mantén pulsado y habla</span>
+    </div>
+
+    <div style="width: 56px; height: 56px; border-radius: 17px; background: #F7F4EE; border: 1px solid #DCD6CB; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: #747068;">
+      <svg width="20" height="20" viewBox="0 0 24 24" class="ico"><path d="M3 12h4l3-7 4 14 3-7h4"></path></svg>
+      <span style="font-size: 9.5px; font-weight: 500; letter-spacing: 0.02em;">Hábitos</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>
