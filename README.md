@@ -444,12 +444,20 @@ con hoy.
 `Intl.DateTimeFormat(..., { timeZone: 'Europe/Madrid' })` — nunca con el reloj
 del servidor, que en Vercel corre en UTC y en cualquier región del mundo.
 
-**El icono es un solo glifo, no un archivo de diseño aparte.** Los cinco
-tamaños de `public/iconos/` salen de una plantilla HTML mínima
-(`"i"` en Instrument Serif sobre el mismo fondo oscuro del badge de la
-barra lateral) capturada con Chromium sin cabeza y redimensionada con `sips`.
-Si cambia la marca, se retoca ese HTML y se regeneran los cinco, no se
+**El icono es una plantilla HTML, no un archivo de diseño aparte.** Los cinco
+tamaños de `public/iconos/` salen de una página mínima — una página de
+calendario con dos anillas de espiral y una rejilla de colores, los mismos
+que las categorías — capturada con Chromium sin cabeza y redimensionada con
+`sips`. Si cambia la marca, se retoca ese HTML y se regeneran los cinco, no se
 diseñan uno a uno.
+
+**Safari en macOS ignora el icono que se manda en cada aviso.** Usa siempre
+el del manifest, pase lo que se le pida en `showNotification()` — es un
+límite conocido de su implementación, no un fallo de esta app. Por eso el
+icono real es el del manifest (`public/manifest.webmanifest`), y el que se
+pasa en `public/firebase-messaging-sw.js` es solo para Chrome/Edge, que sí lo
+respetan; deben apuntar siempre al mismo fichero para que no se noten
+distintos según el navegador.
 
 ### Los nombres de eventos van coloreados
 
