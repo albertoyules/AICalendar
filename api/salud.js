@@ -12,6 +12,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 
 import { MODELO, claveLimpia } from './_cerebro.js';
+import { firebaseAdmin } from './_admin.js';
 
 function revisarClave() {
   const bruta = process.env.ANTHROPIC_API_KEY;
@@ -62,19 +63,75 @@ async function probarClave() {
   }
 }
 
+/** ¿Está el JSON de la cuenta de servicio y tiene la forma que se espera? */
+function revisarCuentaDeServicio() {
+  const bruta = process.env.FIREBASE_SERVICE_ACCOUNT;
+  if (!bruta) {
+    return {
+      estado: 'FALTA',
+      pista:
+        'Añade FIREBASE_SERVICE_ACCOUNT en Vercel con el JSON completo (Firebase Console > Configuración del proyecto > Cuentas de servicio > Generar nueva clave privada). Pega el fichero tal cual, sin prefijo VITE_.',
+    };
+  }
+  let datos;
+  try {
+    datos = JSON.parse(bruta);
+  } catch {
+    return { estado: 'JSON INVÁLIDO', pista: 'No se puede leer como JSON. Pega el fichero descargado entero, sin recortar ni reformatear.' };
+  }
+  if (!datos.project_id || !datos.private_key || !datos.client_email) {
+    return { estado: 'INCOMPLETA', pista: 'Le faltan campos (project_id, private_key o client_email). ¿Es el JSON de cuenta de servicio correcto?' };
+  }
+  return { estado: 'PRESENTE', proyecto: datos.project_id, cuenta: datos.client_email };
+}
+
+/** Inicializa de verdad y hace una lectura mínima, para saber si Firestore la acepta. */
+async function probarCuentaDeServicio() {
+  try {
+    firebaseAdmin();
+    const admin = (await import('firebase-admin')).default;
+    await admin.firestore().collection('usuarios').limit(1).get();
+    return { estado: 'FUNCIONA' };
+  } catch (error) {
+    return { estado: 'ERROR', pista: error?.message?.slice(0, 200) ?? 'Fallo desconocido.' };
+  }
+}
+
+function revisarCronSecret() {
+  const bruto = process.env.CRON_SECRET;
+  if (!bruto) {
+    return { estado: 'FALTA', pista: 'Añade CRON_SECRET en Vercel — cualquier texto aleatorio de 16+ caracteres. Sin él, los avisos programados no pueden ejecutarse.' };
+  }
+  if (bruto.trim().length < 16) {
+    return { estado: 'CORTO', pista: 'Con menos de 16 caracteres es fácil de adivinar. Genera uno más largo.' };
+  }
+  return { estado: 'PRESENTE', longitud: bruto.trim().length };
+}
+
 export default async function handler(req, res) {
+  const probar = req.query?.probar === '1';
+
   const clave = revisarClave();
+  const cuentaDeServicio = revisarCuentaDeServicio();
+  const cronSecret = revisarCronSecret();
+
   const informe = {
     servidor: 'en pie',
     modelo: MODELO,
     clave,
+    avisosPush: { cuentaDeServicio, cronSecret },
   };
 
   // La prueba real solo bajo petición: cada llamada gasta (poquísimo, pero gasta).
-  if (req.query?.probar === '1' && clave.estado === 'PRESENTE') {
+  if (probar && clave.estado === 'PRESENTE') {
     informe.prueba = await probarClave();
   } else if (clave.estado === 'PRESENTE') {
     informe.prueba = 'Añade ?probar=1 a la URL para comprobar que Anthropic la acepta.';
+  }
+  if (probar && cuentaDeServicio.estado === 'PRESENTE') {
+    informe.avisosPush.prueba = await probarCuentaDeServicio();
+  } else if (cuentaDeServicio.estado === 'PRESENTE') {
+    informe.avisosPush.prueba = 'Añade ?probar=1 para comprobar que Firestore acepta la cuenta de servicio.';
   }
 
   informe.todoBien =

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertCircle, ChevronLeft, ChevronRight, LogOut, Moon, Plus, Sun, X } from 'lucide-react';
+import { AlertCircle, Bell, BellOff, ChevronLeft, ChevronRight, LogOut, Moon, Plus, Sun, X } from 'lucide-react';
 
 import AgendaDia from './components/AgendaDia';
 import BarraMovil from './components/BarraMovil';
@@ -15,6 +15,7 @@ import LoginScreen from './screens/LoginScreen';
 import { useAuth } from './hooks/useAuth';
 import { useEsMovil } from './hooks/useEsMovil';
 import { useEventos } from './hooks/useEventos';
+import { useNotificaciones } from './hooks/useNotificaciones';
 import { useTema } from './hooks/useTema';
 import {
   actualizarEvento,
@@ -39,6 +40,7 @@ import {
 
 export default function App() {
   const { oscuro, alternar } = useTema();
+  const notificaciones = useNotificaciones();
   const esMovil = useEsMovil();
   const { usuario, comprobando, hacenFaltaCredenciales } = useAuth();
 
@@ -172,6 +174,15 @@ export default function App() {
             <BotonCabecera etiqueta="Nuevo evento" onClick={() => setModal({ fechaSugerida: foco })}>
               <Plus size={20} strokeWidth={1.8} />
             </BotonCabecera>
+            {notificaciones.soportado && (
+              <BotonCabecera
+                etiqueta={notificaciones.activa ? 'Desactivar avisos en este dispositivo' : 'Activar avisos'}
+                onClick={notificaciones.activa ? notificaciones.desactivar : notificaciones.pedirPermiso}
+                desactivado={notificaciones.activando || notificaciones.bloqueada}
+              >
+                {notificaciones.activa ? <Bell size={19} strokeWidth={1.6} /> : <BellOff size={19} strokeWidth={1.6} />}
+              </BotonCabecera>
+            )}
             {usuario && (
               <BotonCabecera etiqueta="Cerrar sesión" onClick={cerrarSesion}>
                 <LogOut size={18} strokeWidth={1.6} />
@@ -181,6 +192,9 @@ export default function App() {
         </div>
 
         {avisoVisible && <Aviso texto={avisoVisible} onCerrar={() => setAvisoCerrado(true)} />}
+        {notificaciones.error && (
+          <Aviso texto={notificaciones.error} onCerrar={notificaciones.descartarError} />
+        )}
 
         {pantalla === 'agenda' && (
           <AgendaDia
@@ -270,6 +284,7 @@ export default function App() {
         onTema={alternar}
         usuario={usuario}
         onSalir={cerrarSesion}
+        notificaciones={notificaciones}
       />
 
       {seccion === 'calendario' ? (
@@ -302,6 +317,9 @@ export default function App() {
           )}
 
           {avisoVisible && <Aviso texto={avisoVisible} onCerrar={() => setAvisoCerrado(true)} />}
+          {notificaciones.error && (
+            <Aviso texto={notificaciones.error} onCerrar={notificaciones.descartarError} />
+          )}
 
           {!hayFirebase && (
             <p className="m-0 text-center text-[11.5px]" style={{ color: 'var(--tinta-tenue)' }}>
@@ -351,13 +369,14 @@ function Aviso({ texto, onCerrar }) {
   );
 }
 
-function BotonCabecera({ etiqueta, onClick, children }) {
+function BotonCabecera({ etiqueta, onClick, children, desactivado }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={desactivado}
       aria-label={etiqueta}
-      className="flex h-11 w-11 items-center justify-center rounded-xl"
+      className="flex h-11 w-11 items-center justify-center rounded-xl disabled:opacity-40"
       style={{ color: 'var(--tinta-suave)' }}
     >
       {children}

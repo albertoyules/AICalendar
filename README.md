@@ -141,6 +141,11 @@ función no llega a verlas. Para esas, mira la app:
 Recuerda que tocar una variable `VITE_` obliga a **volver a desplegar**: se
 incrustan al compilar, no se leen al ejecutarse.
 
+El mismo `/api/salud?probar=1` también diagnostica los avisos push, bajo
+`avisosPush` — la cuenta de servicio y `CRON_SECRET`. Es opcional: si no vas a
+usar la fase 4 todavía, ese bloque en `FALTA` no afecta al resto de la app.
+Detalle completo de qué poner y de dónde sacarlo en «Próximos pasos» más abajo.
+
 Después, en Firebase > Authentication > Settings > **Dominios autorizados**,
 añade el dominio que te dé Vercel. Sin eso la entrada con Google falla, que es
 exactamente el error que sale al abrirlo desde el móvil por wifi.
@@ -169,20 +174,41 @@ src/
     firebase.js      Arranque; si no hay credenciales, se queda en null
   lib/
     fechas.js        Todo lo de fechas: semana en lunes, formato español
+    recurrencia.js   Genera las fechas de una serie repetida
+    resumen.js       Texto de los avisos push, plano — sin JSX
   services/
     eventosRepository.js   Firestore o localStorage tras la misma puerta
-  hooks/
-    useTema.js       Claro / oscuro / seguir al sistema
-    useEventos.js    Suscripción en vivo a un rango + índice por día
-  services/
     ia.js            El bucle de agente: ejecuta las herramientas de Claude
-  components/        Rail, cabecera, vista de mes, vista de semana, chat, alta
+    auth.js          Entrar y salir con Google
+  hooks/
+    useTema.js           Claro / oscuro / seguir al sistema
+    useEventos.js        Suscripción en vivo a un rango + índice por día
+    useNotificaciones.js Permiso, token y alta del dispositivo para avisos
+  components/        Rail, cabecera, vista de mes/semana/día, chat, alta
+  screens/
+    LoginScreen.jsx  La puerta: entrar con Google y nada más
 
-server/              El cerebro. Tiene la clave; no tiene la agenda.
-  src/
-    index.js         POST /api/chat — sin estado, un turno por llamada
-    herramientas.js  Las 4 herramientas que Claude puede usar
-    prompt.js        Quién es, cómo trabaja y cómo escribe
+api/                  El cerebro y los avisos, en producción (funciones de Vercel)
+  chat.js            POST /api/chat — sin estado, un turno por llamada
+  salud.js           Diagnóstico de toda la configuración, sin exponer secretos
+  _cerebro.js         Piensa: llama a Claude con las herramientas
+  _herramientas.js    Las herramientas que Claude puede usar
+  _prompt.js          Quién es, cómo trabaja y cómo escribe
+  _modelo.js           Traduce el modelo elegido a sus parámetros
+  _admin.js            Acceso de administrador a Firebase (cuenta de servicio)
+  _avisos.js            Manda un push a todos los dispositivos de un usuario
+  cron/
+    diario.js          El aviso de las 9: qué tienes hoy
+    semanal.js         El briefing de los lunes: la semana entera
+    _comun.js           Fecha de hoy en Madrid, y el candado de CRON_SECRET
+
+server/               El cerebro, en local. Llama a api/_cerebro.js — no se
+  src/index.js         duplica: existe solo para trabajar sin desplegar.
+
+public/
+  firebase-messaging-sw.js   El service worker: recibe el push, abre la app
+  manifest.webmanifest        Lo que hace la app instalable
+  iconos/                     Generados desde un único glifo de marca
 ```
 
 ### Decisiones que conviene no deshacer sin pensarlo
@@ -219,36 +245,73 @@ hablar de esta semana aunque estés mirando diciembre.
 - [x] **Fase 2** — El cerebro: Claude con herramientas, chat de texto
 - [x] **Fase 3** — Voz: hablarle y que conteste en voz alta
 - [x] **Desplegado** — Vercel + Firebase, sesión con Google, móvil
-- [ ] **Fase 4** — Avisos push y briefing de los lunes
+- [x] **Eventos recurrentes** — diarios y semanales
+- [x] **Fase 4** — Avisos push y briefing de los lunes (código listo; te
+      quedan 3 pasos manuales en Firebase/Vercel — sección de abajo)
 - [ ] **Fase 5** — Hábitos y rachas
 - [ ] **Fase 6** — Canal externo (Telegram o WhatsApp)
 
 ## Próximos pasos
 
-### Fase 4 — Avisos push al iPhone
+### Fase 4 — Avisos push: cómo activarlos
 
-Para que lleguen notificaciones a la pantalla de bloqueo hacen falta dos cosas
-en orden, y la primera es la que de verdad importa:
+El código ya está todo escrito. Lo que falta son datos que solo tú puedes
+sacar de las consolas de Firebase y Vercel — no son secretos que yo pueda
+inventar ni adivinar.
 
-1. **Que la app sea instalable.** Ahora mismo no lo es — falta un
-   `public/manifest.webmanifest` y un service worker. En iOS, Safari solo
-   entrega Web Push a apps instaladas en la pantalla de inicio (iOS 16.4+);
-   sin este paso, ningún push llegará nunca, en ningún punto del proceso.
-   `LONAVOICE/public/manifest.webmanifest` (otro proyecto tuyo) sirve de
-   referencia de partida.
-2. **Enviar los avisos.** Aquí hay una corrección sobre lo que se dijo al
-   principio: **no hace falta el plan Blaze de Firebase.** Eso era cierto
-   mientras el cerebro iba a vivir en Cloud Functions; ahora vive en Vercel.
-   Enviar una notificación por FCM (Firebase Cloud Messaging) solo necesita
-   llamar a su API REST con una cuenta de servicio — se puede hacer desde
-   cualquier función de `api/`, sin Cloud Functions de por medio. El único
-   coste real sería un **Vercel Cron** (gratis en el plan Hobby hasta cierto
-   límite) que dispare `api/briefing.js` los lunes por la mañana y otro que
-   repase "vence pronto" para los avisos de una hora antes.
+**Qué hace, en resumidas cuentas:** cada día a las 9 (hora de Madrid), un aviso
+con lo que tienes ese día. Los lunes a las 9, un briefing de la semana entera.
+Cuando construyamos hábitos (fase 5), este mismo mecanismo servirá para sus
+recordatorios — la fontanería ya está pensada para eso, solo faltará un tercer
+disparador.
 
-Con eso: briefing semanal de los lunes, y un aviso corto antes de cada cita de
-salud o entrega de universidad — que es justo lo que pediste al principio de
-todo.
+**Tres pasos, en este orden:**
+
+1. **Clave VAPID** (para que el navegador pueda recibir avisos). Firebase
+   Console → icono de rueda dentada → **Configuración del proyecto** →
+   pestaña **Cloud Messaging** → baja hasta **Certificados push web** →
+   **Generar par de claves**. Copia la clave que aparece y ponla en Vercel
+   como `VITE_FIREBASE_VAPID_KEY`.
+
+2. **Cuenta de servicio** (para que el servidor pueda mandar avisos). Firebase
+   Console → **Configuración del proyecto** → pestaña **Cuentas de servicio**
+   → **Generar nueva clave privada**. Se descarga un fichero `.json`. Ábrelo,
+   copia **todo** su contenido tal cual, y pégalo en Vercel como
+   `FIREBASE_SERVICE_ACCOUNT`. Esto no es un secreto pequeño: quien lo tenga
+   puede actuar como administrador de tu proyecto de Firebase entero. No lo
+   subas nunca a git ni lo compartas — solo va en las variables de entorno de
+   Vercel.
+
+3. **Contraseña del disparador** (para que nadie más pueda hacer sonar tus
+   avisos). En Vercel, añade `CRON_SECRET` con cualquier texto aleatorio de
+   16 caracteres o más — un generador de contraseñas vale. Vercel la manda
+   sola en cada disparo programado; no hay que hacer nada más con ella.
+
+Después de meter las tres, vuelve a desplegar y comprueba en
+`https://<tu-app>.vercel.app/api/salud?probar=1` que `avisosPush` sale bien
+(el mismo diagnóstico que ya usaste para la clave de Anthropic).
+
+Por último, activa la campanita: entra en la app (en el móvil, instalada en
+la pantalla de inicio — ver más abajo) y pulsa el icono de campana en la
+barra lateral o en la cabecera. Sin este último clic tuyo, nadie tiene un
+token guardado y no hay a quién mandarle nada.
+
+**Una cosa que no tiene arreglo, y hay que saberla de antemano:** en el plan
+**Hobby de Vercel, cada Cron solo puede dispararse una vez al día, y sin
+minuto exacto** — Vercel dice literalmente que puede llegar en cualquier
+momento dentro de la hora configurada (entre las 8:00 y las 8:59 UTC, en nuestro
+caso). Sumado a que España cambia de hora dos veces al año y el disparo está
+fijado en UTC, el aviso de "las 9" llegará en la práctica entre las 8:00 y las
+10:00 según la época del año — más cerca de las 9 en verano, que es donde
+prioricé el ajuste porque cubre más meses del año. Para minuto exacto todo el
+año hace falta el plan Pro de Vercel; no lo he activado porque no lo has
+pedido, pero es la única forma de tener precisión real.
+
+**En iPhone, además, el aviso solo llega si la web está instalada en la
+pantalla de inicio** (Safari → compartir → Añadir a pantalla de inicio, con
+iOS 16.4 o más nuevo). Ya lo dejé preparado (`public/manifest.webmanifest`,
+iconos, `apple-touch-icon`) — es Apple quien exige el paso de instalar, no
+hay forma de saltárselo.
 
 ### Fase 6 — WhatsApp o Telegram
 
@@ -267,9 +330,6 @@ prepago sirve) y plantillas preaprobadas para poder escribir tú primero.
 
 ### Otras mejoras a valorar
 
-- **Eventos recurrentes.** No existen en el esquema de datos: "medicación
-  todos los días" o "clase todos los martes" hoy hay que crearlos uno a uno.
-  Es el hueco más notorio para el uso real que describiste al principio.
 - **Confirmación antes de borrar.** El prompt le pide a la IA que pregunte
   si hay duda, pero no hay red de seguridad en la interfaz si se equivoca.
 - **Deshacer la última acción de la IA**, por si interpreta mal algo.
@@ -351,6 +411,46 @@ sin preguntar. Es una diferencia de modelo, no de diseño. Mitigación práctica
 si Haiku pregunta, dale una fecha de fin generosa ("hasta final de año") — con
 fecha de fin explícita funciona perfecto siempre.
 
+### Avisos push: cómo funciona por dentro
+
+Sin plan Blaze de Firebase ni Cloud Functions — todo corre en las funciones de
+Vercel que ya existían. Enviar un push por FCM (Firebase Cloud Messaging) solo
+necesita llamar a su API con una cuenta de servicio; eso lo puede hacer
+cualquier función de `api/`.
+
+**Quién dispara qué.** Vercel Cron llama a `api/cron/diario.js` y
+`api/cron/semanal.js` con la cabecera `Authorization: Bearer <CRON_SECRET>`
+que añade solo — `api/cron/_comun.js::autorizado()` comprueba que coincide
+con la variable de entorno antes de tocar nada. Sin `CRON_SECRET`, esas rutas
+rechazan cualquier petición: son URLs públicas como cualquier otra de `api/`,
+así que sin el candado cualquiera podría dispararlas.
+
+**Un usuario, varios dispositivos.** El Mac y el iPhone son documentos
+distintos en `usuarios/{uid}/dispositivos/{idLocal}` — `idLocal` es un id
+aleatorio guardado en `localStorage` de cada navegador
+(`useNotificaciones.js`), así que volver a activar el permiso no crea
+duplicados. El servidor manda a todos los dispositivos del usuario en
+paralelo, y si uno ya no existe (desinstalada, permiso revocado), borra su
+token de paso al recibir el error de FCM correspondiente
+(`api/_avisos.js`).
+
+**Ni dos veces el mismo día.** Vercel avisa de que un Cron puede repetirse por
+un fallo de red — nada grave en sí, pero mandar el mismo aviso dos veces sí lo
+sería. Cada usuario guarda `ultimoDiarioEnviado`/`ultimoSemanalEnviado`
+('YYYY-MM-DD') en su propio documento, y el cron se lo salta si ya coincide
+con hoy.
+
+**La hora es siempre la de Madrid**, calculada con
+`Intl.DateTimeFormat(..., { timeZone: 'Europe/Madrid' })` — nunca con el reloj
+del servidor, que en Vercel corre en UTC y en cualquier región del mundo.
+
+**El icono es un solo glifo, no un archivo de diseño aparte.** Los cinco
+tamaños de `public/iconos/` salen de una plantilla HTML mínima
+(`"i"` en Instrument Serif sobre el mismo fondo oscuro del badge de la
+barra lateral) capturada con Chromium sin cabeza y redimensionada con `sips`.
+Si cambia la marca, se retoca ese HTML y se regeneran los cinco, no se
+diseñan uno a uno.
+
 ### Los nombres de eventos van coloreados
 
 Cuando la IA menciona un evento lo marca con su categoría —`[[salud|tratamiento]]`—
@@ -367,11 +467,6 @@ repositorio limpia las marcas de los títulos antes de guardarlos.
 Lo que se paga con Haiku es fiabilidad: es peor calculando fechas. Por eso el
 prompt no le pide que cuente días — recibe ya escrita la tabla de esta semana y
 la siguiente, día por día, y solo tiene que consultarla.
-
-## Pendiente antes de usarlo de verdad
-
-- **Cloud Functions necesita el plan Blaze** para poder llamar a la API de
-  Claude. El plan gratuito Spark bloquea las llamadas salientes.
 
 ## Diseño
 

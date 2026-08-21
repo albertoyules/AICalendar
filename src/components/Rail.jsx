@@ -1,10 +1,10 @@
-import { Activity, Calendar, LogOut, Moon, Search, Sun } from 'lucide-react';
+import { Activity, Bell, BellOff, Calendar, LogOut, Moon, Search, Sun } from 'lucide-react';
 
 /**
  * Barra estrecha de la izquierda. Es solo navegacion: no lleva nada que se
  * pueda tocar por accidente.
  */
-export default function Rail({ vista, onVista, oscuro, onTema, usuario, onSalir }) {
+export default function Rail({ vista, onVista, oscuro, onTema, usuario, onSalir, notificaciones }) {
   const botones = [
     { id: 'calendario', icono: Calendar, etiqueta: 'Calendario' },
     { id: 'habitos', icono: Activity, etiqueta: 'Hábitos' },
@@ -47,6 +47,26 @@ export default function Rail({ vista, onVista, oscuro, onTema, usuario, onSalir 
       </div>
 
       <div className="grow" />
+
+      {notificaciones?.soportado && (
+        <button
+          type="button"
+          onClick={notificaciones.activa ? notificaciones.desactivar : notificaciones.pedirPermiso}
+          disabled={notificaciones.activando || notificaciones.bloqueada}
+          title={
+            notificaciones.bloqueada
+              ? 'Bloqueadas en el navegador'
+              : notificaciones.activa
+                ? 'Avisos activados · clic para este dispositivo'
+                : 'Activar avisos'
+          }
+          aria-label={notificaciones.activa ? 'Desactivar avisos en este dispositivo' : 'Activar avisos'}
+          className="mb-1.5 flex h-10 w-10 items-center justify-center rounded-[11px] disabled:opacity-40"
+          style={{ color: notificaciones.activa ? 'var(--tinta)' : 'var(--tinta-tenue)' }}
+        >
+          {notificaciones.activa ? <Bell size={18} strokeWidth={1.6} /> : <BellOff size={18} strokeWidth={1.6} />}
+        </button>
+      )}
 
       <button
         type="button"

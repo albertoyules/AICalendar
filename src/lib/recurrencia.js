@@ -1,4 +1,4 @@
-import { aFecha, indiceSemana, sumarDias } from './fechas';
+import { aFecha, indiceSemana, sumarDias } from './fechas.js';
 
 /**
  * Genera las fechas de una serie repetida.

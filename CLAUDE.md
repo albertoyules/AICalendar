@@ -67,6 +67,42 @@ día por día (`semanaActual`/`semanaProxima` en el contexto que arma
 `src/services/ia.js`). Si vuelven a bailar fechas, mira ahí antes que el
 prompt.
 
+## Eventos recurrentes: sin documento plantilla
+
+Una serie repetida no es un documento aparte — son N eventos normales que
+comparten `serieId` (`src/lib/recurrencia.js` genera las fechas, tope de 180
+días si no hay fecha de fin). Cada ocurrencia se edita y borra individualmente
+con las funciones de siempre; `serieId` solo sirve para `borrarSerie()`.
+
+**Límite real de Haiku, sin arreglo de código**: si no le das fecha de fin al
+pedir algo recurrente, tiende a preguntar "¿hasta cuándo?" en vez de usar el
+valor por defecto — resistente incluso a que se lo repitas. Probado con
+Sonnet, mismo prompt exacto: lo crea a la primera. No sigas puliendo el prompt
+para esto; ya se intentó tres veces con refuerzos crecientes y no cede — es el
+modelo, no el texto.
+
+## Avisos push: sin Cloud Functions, sin plan Blaze
+
+Enviar por FCM solo necesita llamar a su API con una cuenta de servicio —
+cualquier función de `api/` puede hacerlo. `api/_admin.js` inicializa
+firebase-admin (perezoso, mismo patrón que `claude()` en `_cerebro.js`);
+`api/_avisos.js` manda a todos los dispositivos de un usuario y limpia tokens
+muertos; `api/cron/diario.js` y `api/cron/semanal.js` son los dos disparadores
+(protegidos por `CRON_SECRET`, que Vercel manda solo en cada invocación).
+
+**Vercel Hobby limita cada Cron a una vez al día, con hasta 59 minutos de
+imprecisión** — no hay forma de programar algo más fino sin pasar a Pro. La
+hora se fija en UTC (`vercel.json`), así que el cambio de hora en España la
+desplaza ~1h dos veces al año; se eligió el horario que acierta en verano
+porque cubre más meses. No merece la pena intentar "arreglarlo" con un cron
+horario que compruebe la hora local — Hobby rechaza cualquier cron más
+frecuente que diario en el propio despliegue.
+
+Un usuario puede tener varios dispositivos: cada uno es un documento en
+`usuarios/{uid}/dispositivos/{idLocal}`, con `idLocal` guardado en
+`localStorage` del navegador (no en el uid) para que reactivar el permiso no
+cree duplicados.
+
 ## Voz: coste cero a propósito
 
 `src/hooks/useDictado.js` y `src/hooks/useVoz.js` usan las APIs nativas del
@@ -97,6 +133,12 @@ añades una superficie nueva, que salga de ahí.
   o se incrustaría en el JavaScript público). Se limpia de espacios sola en
   `api/_cerebro.js::claveLimpia()` — un salto de línea al pegarla en un panel
   es facilísimo de colar.
+- `FIREBASE_SERVICE_ACCOUNT` (el JSON de la cuenta de servicio) es más
+  sensible aún que la clave de Anthropic: da acceso de administrador a todo
+  el proyecto de Firebase, saltándose `firestore.rules` por completo. Solo en
+  variables de entorno de Vercel, nunca en el repo.
+- `CRON_SECRET` protege `api/cron/*` de que cualquiera las dispare desde
+  fuera — son rutas HTTP públicas como cualquier otra de `api/`.
 - Las variables `VITE_FIREBASE_*` sí van en el cliente — no son secretas, las
   protege `firestore.rules`, no ocultarlas.
 - `firestore.rules` ata cada evento a `request.auth.uid`. Si cambias el
@@ -118,14 +160,16 @@ No hay tests automatizados todavía. Antes de dar por bueno un cambio, arranca
 
 ## Estado y lo que falta
 
-Hechas: calendario (mes/semana), alta y edición manual, asistente por texto y
-voz con herramientas, sesión con Google, Firestore por usuario, móvil,
-despliegue en Vercel.
+Hechas: calendario (mes/semana/día), alta y edición manual, eventos
+recurrentes, asistente por texto y voz con herramientas, sesión con Google,
+Firestore por usuario, móvil instalable, avisos push (diario + semanal;
+código completo, pendiente de que el usuario complete 3 pasos manuales en
+Firebase/Vercel — ver README), despliegue en Vercel.
 
 Sin construir: hábitos (hay maqueta en `design/Habitos.dc.html`, sin código),
-eventos recurrentes (no existe el concepto en el esquema de datos), avisos
-push, canal externo (WhatsApp/Telegram). Detalle de cada uno en la sección
-«Próximos pasos» de `README.md`.
+canal externo (WhatsApp/Telegram — decidido: Telegram primero, reutilizando
+`api/_cerebro.js::pensar()`). Detalle de cada uno en «Próximos pasos» del
+README.
 
 ## Diseño
 

@@ -35,3 +35,9 @@ if (hayFirebase) {
 
 export const firestore = db;
 export const auth = autenticacion;
+
+/** La config completa, para pasársela al service worker de notificaciones. */
+export const configFirebase = config;
+
+/** La clave VAPID de Firebase Cloud Messaging. Sin ella no hay avisos push. */
+export const clavePush = import.meta.env.VITE_FIREBASE_VAPID_KEY;
