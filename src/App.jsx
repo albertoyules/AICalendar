@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertCircle, Bell, BellOff, ChevronLeft, ChevronRight, LogOut, Moon, Plus, Sun, X } from 'lucide-react';
+import { AlertCircle, Bell, BellOff, ChevronLeft, ChevronRight, LogOut, Moon, Plus, RotateCw, Sun, X } from 'lucide-react';
 
 import AgendaDia from './components/AgendaDia';
 import BarraMovil from './components/BarraMovil';
@@ -178,6 +178,9 @@ export default function App() {
             </BotonCabecera>
             <BotonCabecera etiqueta="Nuevo evento" onClick={() => setModal({ fechaSugerida: foco })}>
               <Plus size={20} strokeWidth={1.8} />
+            </BotonCabecera>
+            <BotonCabecera etiqueta="Recargar" onClick={() => window.location.reload()}>
+              <RotateCw size={19} strokeWidth={1.6} />
             </BotonCabecera>
             {notificaciones.soportado && (
               <BotonCabecera

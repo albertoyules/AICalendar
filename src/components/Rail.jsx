@@ -1,4 +1,4 @@
-import { Activity, Bell, BellOff, Calendar, LogOut, Moon, Search, Sun } from 'lucide-react';
+import { Activity, Bell, BellOff, Calendar, LogOut, Moon, RotateCw, Search, Sun } from 'lucide-react';
 
 /**
  * Barra estrecha de la izquierda. Es solo navegacion: no lleva nada que se
@@ -47,6 +47,17 @@ export default function Rail({ vista, onVista, oscuro, onTema, usuario, onSalir,
       </div>
 
       <div className="grow" />
+
+      <button
+        type="button"
+        onClick={() => window.location.reload()}
+        title="Recargar"
+        aria-label="Recargar la aplicación"
+        className="mb-1.5 flex h-10 w-10 items-center justify-center rounded-[11px]"
+        style={{ color: 'var(--tinta-tenue)' }}
+      >
+        <RotateCw size={18} strokeWidth={1.6} />
+      </button>
 
       {notificaciones?.soportado && (
         <button
