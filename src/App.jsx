@@ -40,9 +40,9 @@ import {
 
 export default function App() {
   const { oscuro, alternar } = useTema();
-  const notificaciones = useNotificaciones();
   const esMovil = useEsMovil();
   const { usuario, comprobando, hacenFaltaCredenciales } = useAuth();
+  const notificaciones = useNotificaciones(usuario);
 
   const [seccion, setSeccion] = useState('calendario');
   const [modo, setModo] = useState('mes');
@@ -61,6 +61,11 @@ export default function App() {
   // si no, se ve un fogonazo de la pantalla de entrar a quien ya estaba dentro.
   const sinSesion = hacenFaltaCredenciales && !usuario;
 
+  // Los hooks de abajo se llaman igual aunque comprobando siga en marcha (las
+  // reglas de React obligan a eso); `listo` es lo que evita que se suscriban
+  // a destiempo, antes de saber si toca Firestore o el navegador.
+  const listo = !comprobando;
+
   // En el móvil pedimos siempre el mes: así moverse de día en día no dispara
   // una consulta nueva cada vez.
   const porMes = esMovil || modo === 'mes';
@@ -69,13 +74,13 @@ export default function App() {
     return [dias[0], dias[dias.length - 1]];
   }, [porMes, foco]);
 
-  const { porDia, fallo } = useEventos(desde, hasta);
+  const { porDia, fallo } = useEventos(desde, hasta, listo);
 
   const [hoyClave, limiteProximos] = useMemo(() => {
     const h = hoy();
     return [h, sumarDias(h, 10)];
   }, []);
-  const { eventos: eventosProximos } = useEventos(hoyClave, limiteProximos);
+  const { eventos: eventosProximos } = useEventos(hoyClave, limiteProximos, listo);
 
   const proximos = useMemo(() => {
     const manana = sumarDias(hoyClave, 1);
