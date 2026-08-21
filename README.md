@@ -248,7 +248,7 @@ hablar de esta semana aunque estés mirando diciembre.
 - [x] **Eventos recurrentes** — diarios y semanales
 - [x] **Fase 4** — Avisos push y briefing de los lunes (código listo; te
       quedan 3 pasos manuales en Firebase/Vercel — sección de abajo)
-- [ ] **Fase 5** — Hábitos y rachas
+- [x] **Fase 5** — Hábitos: alta, racha, marcado diario y progreso del mes
 - [ ] **Fase 6** — Canal externo (Telegram o WhatsApp)
 
 ## Próximos pasos
@@ -261,9 +261,11 @@ inventar ni adivinar.
 
 **Qué hace, en resumidas cuentas:** cada día a las 9 (hora de Madrid), un aviso
 con lo que tienes ese día. Los lunes a las 9, un briefing de la semana entera.
-Cuando construyamos hábitos (fase 5), este mismo mecanismo servirá para sus
-recordatorios — la fontanería ya está pensada para eso, solo faltará un tercer
-disparador.
+
+Los hábitos (fase 5, ya construida) **no** usan este mecanismo: un recordatorio
+por hábito a su propia hora exacta no encaja en "una vez al día, hora fija"
+que es todo lo que da un Vercel Cron del plan Hobby. Ver la sección de QStash
+más abajo para el disparador que sí lo permite, gratis.
 
 **Tres pasos, en este orden:**
 
@@ -313,6 +315,47 @@ iOS 16.4 o más nuevo). Ya lo dejé preparado (`public/manifest.webmanifest`,
 iconos, `apple-touch-icon`) — es Apple quien exige el paso de instalar, no
 hay forma de saltárselo.
 
+### Recordatorios a hora exacta (hábitos y eventos): Upstash QStash
+
+Vercel Cron (lo que usan los avisos de fase 4) solo dispara una vez al día a
+una hora fija — no sirve para "el hábito de las 22:00" ni para "avísame 2h
+antes de la cita", que son horas por usuario/evento, no un horario fijo del
+despliegue. **Upstash QStash** sí lo permite y tiene tier gratuito (1.000
+mensajes/día, hasta 10 schedules recurrentes con precisión al minuto, y
+mensajes de una sola vez a hora exacta con hasta 7 días de antelación).
+
+Repartido entre lo que puedo dejar escrito yo y lo que solo puedes hacer tú
+desde fuera de este repo:
+
+**Lo que hago yo, en código:**
+1. `api/qstash/recordatorio.js` — endpoint nuevo que verifica la firma de
+   QStash (con `@upstash/qstash`'s `verifySignature`) y llama a la misma
+   función de `api/_avisos.js` que ya manda los push de fase 4. No se toca el
+   cerebro ni el envío, solo quién lo dispara.
+2. En `habitosRepository.js` (crear/editar/borrar hábito) y en
+   `eventosRepository.js` (crear/editar/borrar evento), publicar o cancelar el
+   mensaje en QStash correspondiente cuando el objetivo cambie.
+3. Para hábitos con objetivo semanal (hora fija, recurrente): un *schedule* de
+   QStash con cron al minuto — no hace falta esperar a nada, se crea en el
+   momento en que guardas el hábito.
+4. Para recordatorios de eventos (hora suelta, más de 7 días vista a veces): el
+   cron diario que ya existe (`api/cron/diario.js`) revisa cada día qué
+   recordatorios entran ya en la ventana de 7 días y los publica en QStash con
+   su `Upstash-Not-Before` exacto.
+
+**Lo que tienes que hacer tú, fuera de aquí:**
+1. Crear cuenta gratis en [upstash.com](https://upstash.com) → QStash → copiar
+   el `QSTASH_TOKEN` y las dos claves de firma (`QSTASH_CURRENT_SIGNING_KEY`,
+   `QSTASH_NEXT_SIGNING_KEY`).
+2. Pegar esas tres en las variables de entorno de Vercel (igual que
+   `CRON_SECRET`: solo en Vercel, nunca en el repo).
+3. Volver a desplegar. No hay panel que configurar más allá de eso — QStash no
+   necesita que definas nada por adelantado, los *schedules* y mensajes se
+   crean por código en cuanto tú creas un hábito o un recordatorio.
+
+Cuando quieras que me ponga con esto, dilo y lo dejo construido — de momento
+solo está documentado el plan.
+
 ### Fase 6 — WhatsApp o Telegram
 
 Decisión ya tomada en su momento y que sigue en pie: **Telegram primero.**
@@ -333,8 +376,6 @@ prepago sirve) y plantillas preaprobadas para poder escribir tú primero.
 - **Confirmación antes de borrar.** El prompt le pide a la IA que pregunte
   si hay duda, pero no hay red de seguridad en la interfaz si se equivoca.
 - **Deshacer la última acción de la IA**, por si interpreta mal algo.
-- **Hábitos** (fase 5): la pantalla ya está diseñada en
-  `design/Habitos.dc.html`, falta construirla — es independiente del resto.
 - **Buscar**: el icono ya está en el `Rail`, sin pantalla detrás.
 - **Recordatorios configurables** (ahora mismo "vence pronto" es fijo a
   universidad y salud a 10 días vista).

@@ -164,12 +164,33 @@ Hechas: calendario (mes/semana/día), alta y edición manual, eventos
 recurrentes, asistente por texto y voz con herramientas, sesión con Google,
 Firestore por usuario, móvil instalable, avisos push (diario + semanal;
 código completo, pendiente de que el usuario complete 3 pasos manuales en
-Firebase/Vercel — ver README), despliegue en Vercel.
+Firebase/Vercel — ver README), despliegue en Vercel, hábitos con rachas.
 
-Sin construir: hábitos (hay maqueta en `design/Habitos.dc.html`, sin código),
-canal externo (WhatsApp/Telegram — decidido: Telegram primero, reutilizando
-`api/_cerebro.js::pensar()`). Detalle de cada uno en «Próximos pasos» del
-README.
+Sin construir: canal externo (WhatsApp/Telegram — decidido: Telegram primero,
+reutilizando `api/_cerebro.js::pensar()`), y recordatorios a hora exacta por
+hábito/evento vía Upstash QStash (plan escrito en el README, pendiente de que
+el usuario cree la cuenta gratuita). Detalle de cada uno en «Próximos pasos»
+del README.
+
+## Hábitos: un documento por hábito, sin subcolección de marcas
+
+`usuarios/{uid}/habitos/{habitoId}` — mismo patrón dual Firestore/localStorage
+que los eventos (`habitosRepository.js`, calcado de `eventosRepository.js`).
+Las marcas de qué días se cumplió van en un mapa dentro del propio documento
+(`marcas: { '2026-08-22': true }`), no en una subcolección: un año de marcas
+son 365 claves, no compensa pagar una consulta aparte por algo tan pequeño. Se
+alternan con notación de punto (`marcas.2026-08-22`) para no pisar el resto si
+dos pestañas tocan el mismo hábito a la vez; borrar una marca usa
+`deleteField()`, no `false` — así el mapa no crece para siempre.
+
+Toda la aritmética (racha, meta del mes) vive en `src/lib/habitos.js`, pura y
+sin Firestore, igual que `fechas.js` y `recurrencia.js`. La racha cuenta hacia
+atrás desde hoy si hoy ya está marcado, o desde ayer si hoy sigue pendiente —
+así el día en curso nunca rompe una racha antes de tiempo. La meta del mes
+prorratea el objetivo semanal sobre los días transcurridos
+(`Math.round(diasTranscurridos / 7 * objetivoSemanal)`), en vez de contar días
+del mes a secas, para que un objetivo de "3 por semana" no aparezca siempre
+por debajo del 50% aunque se cumpla siempre.
 
 ## Diseño
 
