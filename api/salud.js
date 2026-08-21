@@ -111,21 +111,27 @@ function revisarCronSecret() {
 /** ¿Están las tres variables de QStash, para los avisos de hábitos a hora exacta? */
 function revisarQstash() {
   const token = process.env.QSTASH_TOKEN;
+  const url = process.env.QSTASH_URL;
   const actual = process.env.QSTASH_CURRENT_SIGNING_KEY;
   const siguiente = process.env.QSTASH_NEXT_SIGNING_KEY;
-  const url = process.env.APP_URL;
+  const appUrl = process.env.APP_URL;
 
   const faltan = [];
   if (!token) faltan.push('QSTASH_TOKEN');
+  // Las cuentas de Upstash caen en una región concreta (eu-central-1, etc.):
+  // sin QSTASH_URL el cliente apunta al endpoint global por defecto y el
+  // token da 401 aunque esté bien copiado.
+  if (!url) faltan.push('QSTASH_URL');
   if (!actual) faltan.push('QSTASH_CURRENT_SIGNING_KEY');
   if (!siguiente) faltan.push('QSTASH_NEXT_SIGNING_KEY');
-  if (!url) faltan.push('APP_URL');
+  if (!appUrl) faltan.push('APP_URL');
 
   if (faltan.length > 0) {
     return {
       estado: 'FALTA',
-      pista: `Faltan: ${faltan.join(', ')}. Las tres de QSTASH_ salen de la consola de Upstash (QStash > tu proyecto); ` +
-        'APP_URL es la URL de producción de esta app (https://tu-app.vercel.app, sin barra final).',
+      pista: `Faltan: ${faltan.join(', ')}. Las cuatro QSTASH_ salen de la consola de Upstash (QStash > tu proyecto, ` +
+        'botón de copiar variables de entorno); APP_URL es la URL de producción de esta app ' +
+        '(https://tu-app.vercel.app, sin barra final).',
     };
   }
   return { estado: 'PRESENTE' };

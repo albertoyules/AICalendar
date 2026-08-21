@@ -341,16 +341,29 @@ solo faltan las cuatro cosas de la lista de abajo, que solo puedes hacer tú.
 
 **Solo puedes hacerlo tú, fuera de este repo:**
 1. Crear cuenta gratis en [upstash.com](https://upstash.com) → QStash → copiar
-   el `QSTASH_TOKEN` y las dos claves de firma (`QSTASH_CURRENT_SIGNING_KEY`,
-   `QSTASH_NEXT_SIGNING_KEY`) — están todas en la misma pantalla.
-2. Añadir esas tres, más `APP_URL` (la URL de producción de esta app, tipo
+   `QSTASH_URL`, `QSTASH_TOKEN` y las dos claves de firma
+   (`QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`) — la propia
+   consola de Upstash trae un botón para copiar las cuatro de golpe.
+   `QSTASH_URL` importa de verdad: las cuentas nuevas caen en una región
+   concreta (por ejemplo `eu-central-1`) y el token solo vale contra el
+   endpoint de esa región — sin esta variable, el cliente apunta al endpoint
+   por defecto y el token da 401 aunque esté bien copiado.
+2. Añadir esas cuatro, más `APP_URL` (la URL de producción de esta app, tipo
    `https://tu-app.vercel.app`, sin barra final — QStash necesita poder
    llamarla desde fuera), en las variables de entorno de Vercel. Igual que
    `CRON_SECRET`: solo en Vercel, nunca en el repo.
-3. Volver a desplegar. Después, `/api/salud?probar=1` dice si las cuatro están
-   bien puestas (dentro de `recordatoriosHabitos.qstash`).
+3. Volver a desplegar — **las variables no se aplican solas**: hasta que no
+   haya un despliegue nuevo después de guardarlas, las funciones siguen
+   viendo el entorno de antes. Después, `/api/salud?probar=1` dice si las
+   cinco están bien puestas (dentro de `recordatoriosHabitos.qstash`).
 4. Activar la casilla en un hábito con hora — el *schedule* se crea solo, no
    hay nada que configurar en la consola de Upstash.
+
+**Nota de seguridad:** si en algún momento pegaste el token o las signing keys
+en un sitio que no sea el propio panel de Vercel (un chat, una nota, un
+mensaje), regenéralas después en la consola de Upstash y actualiza Vercel con
+los valores nuevos — es la única forma de que dejen de existir fuera de donde
+deben.
 
 **Lo que queda fuera, a propósito:** recordatorios sueltos por evento (tipo
 "avísame 2h antes de la cita") no están construidos todavía — necesitan antes

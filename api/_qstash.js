@@ -21,7 +21,12 @@ export function qstash() {
       'Falta QSTASH_TOKEN. Cópialo de la consola de Upstash (QStash > tu proyecto) y añádelo en Vercel.',
     );
   }
-  cliente = new Client({ token });
+  // QSTASH_URL importa de verdad: las cuentas nuevas de Upstash caen en una
+  // región concreta (eu-central-1, etc.) y el token solo vale contra el
+  // endpoint de esa región. Sin esto el cliente apunta al endpoint global por
+  // defecto y el token da 401 aunque esté bien copiado.
+  const baseUrl = process.env.QSTASH_URL;
+  cliente = new Client(baseUrl ? { token, baseUrl } : { token });
   return cliente;
 }
 
