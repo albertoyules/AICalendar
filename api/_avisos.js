@@ -16,11 +16,16 @@ const CODIGOS_TOKEN_MUERTO = new Set([
   'messaging/invalid-registration-token',
 ]);
 
+/**
+ * Devuelve cuántos han salido bien y, de los que no, por qué — sin esto un
+ * fallo de FCM (credenciales mal emparejadas, cuota, lo que sea) desaparecía
+ * sin dejar rastro en ningún sitio que se pudiera consultar después.
+ */
 export async function enviarATodosLosDispositivos(refUsuario, { titulo, cuerpo, tipo }) {
   firebaseAdmin();
 
   const dispositivos = await refUsuario.collection('dispositivos').get();
-  if (dispositivos.empty) return 0;
+  if (dispositivos.empty) return { enviados: 0, fallos: [] };
 
   const resultados = await Promise.allSettled(
     dispositivos.docs.map((d) =>
@@ -34,12 +39,17 @@ export async function enviarATodosLosDispositivos(refUsuario, { titulo, cuerpo, 
     ),
   );
 
+  const fallos = [];
   await Promise.all(
     resultados.map((resultado, i) => {
-      const codigo = resultado.status === 'rejected' ? resultado.reason?.errorInfo?.code : null;
+      if (resultado.status !== 'rejected') return null;
+      const codigo = resultado.reason?.errorInfo?.code ?? resultado.reason?.code ?? 'desconocido';
+      const mensaje = resultado.reason?.errorInfo?.message ?? resultado.reason?.message ?? String(resultado.reason);
+      console.error('[avisos] fallo al mandar:', codigo, mensaje);
+      fallos.push({ codigo, mensaje: mensaje.slice(0, 200) });
       return CODIGOS_TOKEN_MUERTO.has(codigo) ? dispositivos.docs[i].ref.delete() : null;
     }),
   );
 
-  return resultados.filter((r) => r.status === 'fulfilled').length;
+  return { enviados: resultados.filter((r) => r.status === 'fulfilled').length, fallos };
 }

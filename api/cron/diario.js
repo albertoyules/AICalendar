@@ -17,24 +17,26 @@ export default async function handler(req, res) {
     const usuarios = await usuariosConDispositivo();
 
     let enviados = 0;
+    const fallos = [];
     for (const usuario of usuarios.docs) {
       // Vercel puede repetir una invocación: sin esto, un usuario recibiría el
       // mismo aviso dos veces el mismo día.
       if (usuario.data().ultimoDiarioEnviado === hoy) continue;
 
       const eventos = await eventosDelUsuario(usuario.ref, hoy, hoy);
-      const mandados = await enviarATodosLosDispositivos(usuario.ref, {
+      const { enviados: mandados, fallos: fallosUsuario } = await enviarATodosLosDispositivos(usuario.ref, {
         titulo: 'Tu día',
         cuerpo: resumenDia(eventos),
         tipo: 'diario',
       });
+      fallos.push(...fallosUsuario);
       if (mandados > 0) {
         await usuario.ref.set({ ultimoDiarioEnviado: hoy }, { merge: true });
         enviados += mandados;
       }
     }
 
-    res.status(200).json({ ok: true, fecha: hoy, avisosEnviados: enviados });
+    res.status(200).json({ ok: true, fecha: hoy, avisosEnviados: enviados, fallos });
   } catch (error) {
     console.error('[cron/diario]', error);
     res.status(500).json({ error: error.message ?? 'Fallo inesperado.' });

@@ -20,22 +20,24 @@ export default async function handler(req, res) {
     const usuarios = await usuariosConDispositivo();
 
     let enviados = 0;
+    const fallos = [];
     for (const usuario of usuarios.docs) {
       if (usuario.data().ultimoSemanalEnviado === lunes) continue;
 
       const eventos = await eventosDelUsuario(usuario.ref, dias[0], dias[6]);
-      const mandados = await enviarATodosLosDispositivos(usuario.ref, {
+      const { enviados: mandados, fallos: fallosUsuario } = await enviarATodosLosDispositivos(usuario.ref, {
         titulo: 'Tu semana',
         cuerpo: resumenSemana(dias, agruparPorDia(eventos)),
         tipo: 'semanal',
       });
+      fallos.push(...fallosUsuario);
       if (mandados > 0) {
         await usuario.ref.set({ ultimoSemanalEnviado: lunes }, { merge: true });
         enviados += mandados;
       }
     }
 
-    res.status(200).json({ ok: true, semanaDe: lunes, avisosEnviados: enviados });
+    res.status(200).json({ ok: true, semanaDe: lunes, avisosEnviados: enviados, fallos });
   } catch (error) {
     console.error('[cron/semanal]', error);
     res.status(500).json({ error: error.message ?? 'Fallo inesperado.' });
