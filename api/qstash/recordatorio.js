@@ -11,6 +11,7 @@ import admin from 'firebase-admin';
 import { firebaseAdmin } from '../_admin.js';
 import { enviarATodosLosDispositivos } from '../_avisos.js';
 import { receptorQstash, urlBase } from '../_qstash.js';
+import { hoyMadrid } from '../cron/_comun.js';
 
 export default async function handler(req, res) {
   const firma = req.headers['upstash-signature'];
@@ -30,7 +31,8 @@ export default async function handler(req, res) {
   try {
     firebaseAdmin();
     const refUsuario = admin.firestore().collection('usuarios').doc(uid);
-    const habitoSnap = await refUsuario.collection('habitos').doc(habitoId).get();
+    const refHabito = refUsuario.collection('habitos').doc(habitoId);
+    const habitoSnap = await refHabito.get();
 
     // El hábito se pudo borrar o desactivar el aviso después de programarlo:
     // no es un error, solo ya no hay nada que avisar.
@@ -38,11 +40,21 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, omitido: 'hábito ya no existe o sin aviso activo' });
     }
 
+    // QStash reintenta (hasta 5 veces por defecto) si esta función no
+    // responde a tiempo — algo fácil en un arranque en frío, aunque el push
+    // ya se haya mandado antes de que Vercel corte la función. Sin este
+    // candado, cada reintento manda el mismo aviso otra vez.
+    const hoy = hoyMadrid();
+    if (habitoSnap.data().ultimoAvisoEnviado === hoy) {
+      return res.status(200).json({ ok: true, omitido: 'ya se avisó hoy' });
+    }
+
     const { enviados, fallos } = await enviarATodosLosDispositivos(refUsuario, {
       titulo: 'Hábito',
       cuerpo: `No olvides: ${habitoSnap.data().nombre}`,
       tipo: 'habito',
     });
+    if (enviados > 0) await refHabito.set({ ultimoAvisoEnviado: hoy }, { merge: true });
     res.status(200).json({ ok: true, enviados, fallos });
   } catch (error) {
     console.error('[qstash/recordatorio]', error);
