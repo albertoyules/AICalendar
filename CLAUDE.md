@@ -164,18 +164,20 @@ Hechas: calendario (mes/semana/día), alta y edición manual, eventos
 recurrentes, asistente por texto y voz con herramientas, sesión con Google,
 Firestore por usuario, móvil instalable, avisos push (diario + semanal;
 código completo, pendiente de que el usuario complete 3 pasos manuales en
-Firebase/Vercel — ver README), despliegue en Vercel, hábitos con rachas y
-recordatorio diario a hora exacta por hábito vía Upstash QStash (código
-completo, pendiente de que el usuario cree la cuenta gratuita — ver README).
+Firebase/Vercel — ver README), despliegue en Vercel, hábitos con rachas,
+recordatorio diario a hora exacta por hábito y avisos sueltos "X antes" por
+evento (con nota opcional), los dos vía Upstash QStash — código completo,
+pendiente de que el usuario cree la cuenta gratuita (ver README). Viewport
+móvil fijado (sin zoom, sin que el teclado deforme el layout).
 
 Sin construir: canal externo (WhatsApp/Telegram — decidido: Telegram primero,
-reutilizando `api/_cerebro.js::pensar()`), y recordatorios sueltos por evento
-(tipo "avísame 2h antes de la cita" — necesita antes decidir la interfaz de
-"cuánto antes" en `ModalEvento.jsx`; el mecanismo de QStash de los hábitos no
-sirve tal cual porque ahí la hora es fija y recurrente, no suelta). Detalle de
-cada uno en «Próximos pasos» del README.
+reutilizando `api/_cerebro.js::pensar()`), y avisos en eventos repetidos
+(una serie no lleva "avísame antes" — multiplicaría los mensajes de QStash
+por cada ocurrencia). Detalle de cada uno en «Próximos pasos» del README.
+Bug conocido sin arreglar: avisos de hábito duplicados (carrera en el
+candado de `api/qstash/recordatorio.js` — ver «Bugs conocidos» del README).
 
-## QStash: quién dispara los avisos de hábito, y por qué no es Vercel Cron
+## QStash: quién dispara los avisos de hábito y de evento, y por qué no es Vercel Cron
 
 Los avisos de fase 4 (diario, semanal) usan Vercel Cron porque son "una vez al
 día, hora fija de todo el proyecto" — encaja perfecto. Un aviso de hábito a
@@ -211,6 +213,42 @@ firma (con cuerpo vacío no hay nada que serializar mal).
 `APP_URL` es una variable nueva, solo para esto: la URL de producción estable
 de la app. No uses `VERCEL_URL` (esa cambia con cada despliegue) — un
 *schedule* de hábito vive mucho más que un despliegue.
+
+### Eventos: un mensaje suelto, no un *schedule* — y el límite de 7 días
+
+Un aviso de hábito es "todos los días a la misma hora": encaja perfecto en un
+*schedule* recurrente de QStash. Un aviso de evento es "una vez, a una hora
+suelta que puede caer dentro de un año": eso es un **mensaje** de QStash
+(`client.publish({ url, notBefore })`), no un *schedule* — y el plan gratuito
+solo admite `notBefore` hasta 7 días vista (`MAX_ADELANTO_SEGUNDOS` en
+`_qstash.js`, con medio día de margen).
+
+Tres piezas, mismo reparto que los hábitos (`api/eventos/recordatorio.js` lo
+registra desde el navegador con idToken verificado,
+`api/qstash/recordatorioEvento.js` es a donde QStash llama de vuelta), más
+una nueva por el límite de 7 días:
+
+- Si al guardar el evento el aviso cae dentro de la ventana, se publica al
+  momento y se guarda el `messageId` en `recordatorioIdQstash`.
+- Si cae más lejos, se deja el evento con `recordatorioMinutosAntes` puesto
+  pero sin `recordatorioIdQstash` — **pendiente**, a propósito.
+- `api/cron/encolarRecordatorios.js` (cron diario nuevo, en `vercel.json`)
+  revisa cada día los próximos ~8 días y programa de verdad los que ya han
+  entrado dentro de la ventana de 7. Puede tardar varios días en "recoger" un
+  aviso pedido con mucha antelación — es intencional, no un bug.
+
+Al reprogramar (cambia la hora o el propio aviso) o al borrar el evento,
+`api/eventos/recordatorio.js` cancela primero el `messageId` anterior con
+`client.messages.cancel()` antes de decidir qué hacer con el nuevo — un
+mensaje huérfano en QStash no se cancela solo.
+
+`instanteMadrid()` en `api/cron/_comun.js` convierte la hora local que guarda
+el evento (`'YYYY-MM-DDTHH:mm'`, sin zona — ver «Datos: Firestore con caída a
+localStorage» más arriba) al instante UTC real que necesita `notBefore`, calculando el desfase
+horario de Madrid en esa fecha concreta con `Intl.DateTimeFormat`. Sin esto,
+un `new Date('...')` sin zona se interpreta en la zona del servidor de
+Vercel (UTC), no en la de Madrid, y el aviso llegaría 1-2 horas tarde según
+la época del año.
 
 ## Hábitos: un documento por hábito, sin subcolección de marcas
 

@@ -13,6 +13,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   onSnapshot,
   orderBy,
@@ -27,6 +28,7 @@ import { CATEGORIA_POR_DEFECTO } from '../config/categorias';
 import { sinMarcas } from '../components/Markdown';
 import { claveDe, diffDias, horaDe, hoy, sumarDias } from '../lib/fechas';
 import { fechasDeSerie } from '../lib/recurrencia';
+import { idTokenActual } from './auth';
 
 const CLAVE_LOCAL = 'iacalendar.eventos';
 const CLAVE_MIGRADO = 'iacalendar.migrado';
@@ -77,8 +79,31 @@ export function normalizarEvento(bruto) {
     todoElDia,
     lugar: bruto.lugar?.trim() || null,
     nota: bruto.nota?.trim() || null,
+    recordatorioMinutosAntes: Number(bruto.recordatorioMinutosAntes) || null,
     creadoPor: bruto.creadoPor ?? 'manual',
   };
+}
+
+/**
+ * Da de alta, reprograma o retira el aviso "X antes" de un evento en QStash,
+ * vía el servidor (igual que sincronizarRecordatorio() en
+ * habitosRepository.js — el token de QStash no puede bajar al navegador).
+ * Best-effort: si falla (sin desplegar, sin red, sin las variables de
+ * QStash), el evento se guarda igual, solo que sin aviso.
+ */
+async function sincronizarRecordatorioEvento(eventoId, inicio, recordatorioMinutosAntes) {
+  if (!enFirestore()) return;
+  try {
+    const idToken = await idTokenActual();
+    if (!idToken) return;
+    await fetch('/api/eventos/recordatorio', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken, eventoId, inicio, recordatorioMinutosAntes }),
+    });
+  } catch (error) {
+    console.warn('[IA Calendar] no se ha podido sincronizar el aviso del evento:', error);
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -178,15 +203,33 @@ export async function guardarEvento(bruto) {
   }
 
   const ref = await addDoc(coleccionEventos(), evento);
+  if (evento.recordatorioMinutosAntes) {
+    await sincronizarRecordatorioEvento(ref.id, evento.inicio, evento.recordatorioMinutosAntes);
+  }
   return ref.id;
 }
 
-export async function actualizarEvento(id, cambios) {
+export async function actualizarEvento(id, cambiosBrutos) {
+  // La IA manda 0 para "quita el aviso" (su esquema no admite null) — se deja
+  // en null antes de guardar, que es como vive "sin aviso" en el resto del código.
+  const cambios =
+    'recordatorioMinutosAntes' in cambiosBrutos
+      ? { ...cambiosBrutos, recordatorioMinutosAntes: cambiosBrutos.recordatorioMinutosAntes || null }
+      : cambiosBrutos;
+
   if (!enFirestore()) {
     escribirLocal(leerLocal().map((e) => (e.id === id ? { ...e, ...cambios } : e)));
     return;
   }
   await updateDoc(documentoEvento(id), cambios);
+
+  // Si cambia la hora o el propio aviso, hay que reprogramarlo — se relee el
+  // documento ya fusionado porque `cambios` puede traer solo uno de los dos.
+  if ('inicio' in cambios || 'recordatorioMinutosAntes' in cambios) {
+    const snap = await getDoc(documentoEvento(id));
+    const actual = snap.data();
+    await sincronizarRecordatorioEvento(id, actual.inicio, actual.recordatorioMinutosAntes);
+  }
 }
 
 export async function borrarEvento(id) {
@@ -194,6 +237,7 @@ export async function borrarEvento(id) {
     escribirLocal(leerLocal().filter((e) => e.id !== id));
     return;
   }
+  await sincronizarRecordatorioEvento(id, null, null);
   await deleteDoc(documentoEvento(id));
 }
 

@@ -21,6 +21,7 @@ export default function ModalEvento({ evento, fechaSugerida, oscuro, onGuardar, 
   const [fin, setFin] = useState(horaDe(evento?.fin ?? '') ?? '');
   const [lugar, setLugar] = useState(evento?.lugar ?? '');
   const [nota, setNota] = useState(evento?.nota ?? '');
+  const [recordatorioMinutosAntes, setRecordatorioMinutosAntes] = useState(evento?.recordatorioMinutosAntes ?? null);
 
   // La repetición solo se ofrece al crear: cambiar la de una serie ya
   // existente (mover "todos los futuros" a otro patrón) queda fuera por
@@ -48,6 +49,7 @@ export default function ModalEvento({ evento, fechaSugerida, oscuro, onGuardar, 
       todoElDia,
       lugar,
       nota,
+      recordatorioMinutosAntes: todoElDia || repetir !== 'no' ? null : recordatorioMinutosAntes,
       creadoPor: evento?.creadoPor ?? 'manual',
     };
     if (!editando && repetir !== 'no') {
@@ -248,11 +250,42 @@ export default function ModalEvento({ evento, fechaSugerida, oscuro, onGuardar, 
             <input
               value={nota}
               onChange={(e) => setNota(e.target.value)}
-              placeholder="Opcional"
+              placeholder="Opcional — se lee en el aviso si pones uno abajo"
               className="w-full bg-transparent text-[15px] outline-none"
               style={{ color: 'var(--tinta)' }}
             />
           </Campo>
+
+          {!todoElDia && repetir === 'no' && (
+            <div className="flex flex-col gap-2">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.07em]" style={{ color: 'var(--tinta-tenue)' }}>
+                Avisarme antes
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  [null, 'No'],
+                  [15, '15 min'],
+                  [60, '1 h'],
+                  [120, '2 h'],
+                  [1440, '1 día'],
+                ].map(([valor, etiqueta]) => (
+                  <button
+                    key={etiqueta}
+                    type="button"
+                    onClick={() => setRecordatorioMinutosAntes(valor)}
+                    className="rounded-full px-3.5 py-2 text-[13px] font-medium"
+                    style={{
+                      background: recordatorioMinutosAntes === valor ? 'var(--tinta)' : 'var(--superficie-3)',
+                      color: recordatorioMinutosAntes === valor ? 'var(--papel)' : 'var(--tinta-media)',
+                      border: '1px solid var(--borde)',
+                    }}
+                  >
+                    {etiqueta}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {editando && evento.serieId && (

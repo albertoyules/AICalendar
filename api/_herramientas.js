@@ -43,7 +43,16 @@ export const HERRAMIENTAS = [
         inicio: { type: 'string', description: FECHA },
         fin: { type: 'string', description: `Opcional, solo si se sabe cuándo acaba. ${FECHA}` },
         lugar: { type: 'string', description: 'Opcional.' },
-        nota: { type: 'string', description: 'Opcional, un detalle suelto que merezca la pena guardar.' },
+        nota: {
+          type: 'string',
+          description:
+            'Opcional, un detalle suelto que merezca la pena guardar. Si el usuario pide que le recuerdes llevar algo ("que no se me olvide el pasaporte"), va aquí — se lee en voz alta en el propio aviso.',
+        },
+        recordatorioMinutosAntes: {
+          type: 'integer',
+          description:
+            'Opcional. Solo si el usuario pide explícitamente un aviso ("avísame una hora antes", "recuérdamelo el día antes") Y el evento tiene hora — sin hora no hay "antes" que valga. En minutos: 15, 30, 60, 120, 1440 (un día)... No lo pongas si no lo piden, y no lo combines con repetir (los eventos repetidos no llevan aviso todavía).',
+        },
         repetir: {
           type: 'object',
           description:
@@ -86,6 +95,10 @@ export const HERRAMIENTAS = [
         fin: { type: 'string', description: FECHA },
         lugar: { type: 'string' },
         nota: { type: 'string' },
+        recordatorioMinutosAntes: {
+          type: 'integer',
+          description: 'En minutos. Manda 0 para quitar un aviso que ya tuviera.',
+        },
       },
       required: ['id'],
     },

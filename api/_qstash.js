@@ -55,3 +55,11 @@ export function urlBase() {
 export function idScheduleHabito(uid, habitoId) {
   return `habito-${uid}-${habitoId}`;
 }
+
+/**
+ * El plan gratuito de QStash solo admite mandar un mensaje suelto (no un
+ * *schedule*) hasta 7 días vista. Se deja medio día de margen por si el cron
+ * diario que reencola los recordatorios lejanos (ver api/cron/encolarRecordatorios.js)
+ * tarda en pasar por uno que esté justo en el borde.
+ */
+export const MAX_ADELANTO_SEGUNDOS = 6.5 * 24 * 60 * 60;

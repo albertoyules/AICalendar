@@ -96,6 +96,7 @@ function paraLaIA(evento) {
     lugar: evento.lugar ?? undefined,
     dia: nombreDia(evento.inicio),
     serieId: evento.serieId ?? undefined,
+    recordatorioMinutosAntes: evento.recordatorioMinutosAntes ?? undefined,
   };
 }
 

@@ -10,6 +10,38 @@ export function hoyMadrid() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid' }).format(new Date());
 }
 
+/**
+ * Cuántos minutos hay que sumarle a una hora de Madrid para tener UTC, en el
+ * instante aproximado dado. Cambia con el horario de verano/invierno, por
+ * eso no es una constante.
+ */
+function desfaseMadridMinutos(instanteAproximado) {
+  const parte = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Madrid',
+    timeZoneName: 'shortOffset',
+  })
+    .formatToParts(instanteAproximado)
+    .find((p) => p.type === 'timeZoneName').value; // 'GMT+2' o 'GMT+1'
+  const horas = Number(parte.replace('GMT', '')) || 0;
+  return horas * 60;
+}
+
+/**
+ * 'YYYY-MM-DDTHH:mm' tal y como lo vive alguien en Madrid -> milisegundos
+ * desde epoch, de verdad. Las fechas del calendario se guardan como hora
+ * local sin zona (ver fechas.js), así que para programar algo en QStash a un
+ * instante exacto hay que deshacer ese desfase primero.
+ */
+export function instanteMadrid(fechaHoraLocal) {
+  // Primero una lectura aproximada tratando el texto como si fuera UTC: sirve
+  // para saber en qué mitad del año caemos (verano/invierno) y sacar el
+  // desfase real de esa fecha. El error de esta primera pasada es como mucho
+  // el propio desfase (1-2h), muy lejos de una transición de horario.
+  const aproximado = new Date(`${fechaHoraLocal}:00Z`);
+  const desfase = desfaseMadridMinutos(aproximado);
+  return aproximado.getTime() - desfase * 60_000;
+}
+
 /** Solo Vercel puede llamar a esto — ver CRON_SECRET en la guía de despliegue. */
 export function autorizado(req) {
   const secreto = process.env.CRON_SECRET;

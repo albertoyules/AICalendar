@@ -315,16 +315,19 @@ iOS 16.4 o más nuevo). Ya lo dejé preparado (`public/manifest.webmanifest`,
 iconos, `apple-touch-icon`) — es Apple quien exige el paso de instalar, no
 hay forma de saltárselo.
 
-### Recordatorios a hora exacta de los hábitos: Upstash QStash
+### Recordatorios a hora exacta: Upstash QStash
 
 Vercel Cron (lo que usan los avisos de fase 4) solo dispara una vez al día a
 una hora fija de todo el proyecto — no sirve para "avísame de este hábito a
-las 22:00" cuando cada hábito puede querer su propia hora. **Upstash QStash**
-sí lo permite y tiene tier gratuito (1.000 mensajes/día, hasta 10 *schedules*
-recurrentes con precisión al minuto). El código ya está escrito y en `main`;
-solo faltan las cuatro cosas de la lista de abajo, que solo puedes hacer tú.
+las 22:00" ni para "avísame 2h antes de la cita", que son horas por
+usuario/objeto, no un horario fijo del despliegue. **Upstash QStash** sí lo
+permite y tiene tier gratuito (1.000 mensajes/día, hasta 10 *schedules*
+recurrentes con precisión al minuto, y mensajes sueltos a hora exacta con
+hasta 7 días de antelación). El código ya está escrito y en `main`; solo
+faltan las cosas de la lista de abajo, que solo puedes hacer tú.
 
-**Ya construido:**
+**Ya construido — hábitos** (aviso diario a una hora fija, vía *schedule*
+recurrente):
 1. `api/_qstash.js` — cliente y verificador de firma de QStash, mismo patrón
    perezoso que `firebaseAdmin()` en `_admin.js`.
 2. `api/qstash/recordatorio.js` — a donde llama QStash a la hora exacta.
@@ -338,6 +341,27 @@ solo faltan las cuatro cosas de la lista de abajo, que solo puedes hacer tú.
    tocar nada en el cambio de hora dos veces al año.
 4. En `ModalHabito.jsx`, la casilla "Avisarme cada día a esta hora" — se ve la
    campanita con la hora al lado del hábito en la tabla si está activada.
+
+**Ya construido — eventos** (aviso suelto de una vez, "X antes"; también
+disponible pidiéndoselo a la IA por chat: "avísame una hora antes", "avísame
+el día antes y recuérdame llevar el pasaporte" — esto último va en el campo
+Nota, se lee junto con el aviso):
+5. `api/eventos/recordatorio.js` — a donde llama el navegador al crear, editar
+   o borrar un evento con aviso. A diferencia del de hábitos, esto es un
+   mensaje suelto (no un *schedule*), así que solo se puede programar si cae
+   dentro de los 7 días del plan gratuito; si el evento está más lejos, se
+   deja pendiente sin id.
+6. `api/qstash/recordatorioEvento.js` — a donde llama QStash a la hora
+   programada. Igual que el de hábitos: firma verificada, relee el evento
+   fresco antes de mandar el push (con la nota si la hay).
+7. `api/cron/encolarRecordatorios.js` — cron diario nuevo (añadido a
+   `vercel.json`) que revisa qué eventos con aviso pendiente ya han entrado
+   dentro de la ventana de 7 días y los programa de verdad. Así un aviso
+   pedido con semanas de antelación no se pierde, solo tarda unos días en
+   activarse.
+8. En `ModalEvento.jsx`, los chips "Avisarme antes" (15 min / 1h / 2h / 1
+   día) — solo con hora concreta y sin repetición; los eventos repetidos no
+   llevan aviso todavía.
 
 **Solo puedes hacerlo tú, fuera de este repo:**
 1. Crear cuenta gratis en [upstash.com](https://upstash.com) → QStash → copiar
@@ -365,11 +389,11 @@ mensaje), regenéralas después en la consola de Upstash y actualiza Vercel con
 los valores nuevos — es la única forma de que dejen de existir fuera de donde
 deben.
 
-**Lo que queda fuera, a propósito:** recordatorios sueltos por evento (tipo
-"avísame 2h antes de la cita") no están construidos todavía — necesitan antes
-decidir una interfaz para "cuánto antes" en `ModalEvento.jsx`, y el mecanismo
-sería algo distinto (un *schedule* recurrente no vale para una hora suelta que
-puede caer a más de 7 días vista). Dilo cuando lo quieras y lo miramos aparte.
+**Lo que queda fuera, a propósito:** avisos en eventos repetidos (una serie
+diaria/semanal no lleva "avísame antes" por ahora — multiplicaría los mensajes
+de QStash por cada ocurrencia, la mayoría fuera de la ventana de 7 días de
+todos modos). También pendiente el bug de avisos duplicados de hábitos —
+sección "Bugs conocidos" más abajo.
 
 ### Fase 6 — WhatsApp o Telegram
 
