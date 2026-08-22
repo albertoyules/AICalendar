@@ -59,15 +59,26 @@
   html {
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
+    height: 100%;
+    /* Sin esto, el propio documento se puede desplazar por debajo de la app
+       (el "rebote" de iOS al llegar arriba/abajo de un input, o un pellizco
+       que deja la página movida) — la app gestiona su propio scroll interno
+       en cada pantalla, el documento entero nunca debería moverse. */
+    overflow: hidden;
   }
 
   body {
     margin: 0;
+    height: 100%;
     background: var(--papel);
     color: var(--tinta);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     overscroll-behavior-y: none;
+  }
+
+  #root {
+    height: 100%;
   }
 
   /* Por debajo de 16px iOS Safari hace zoom al enfocar un campo. */
