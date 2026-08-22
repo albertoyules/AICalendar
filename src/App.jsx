@@ -7,7 +7,9 @@ import CabeceraCalendario from './components/CabeceraCalendario';
 import Habitos from './components/Habitos';
 import ModalEvento from './components/ModalEvento';
 import PanelChat from './components/PanelChat';
+import PomodoroFlotante from './components/PomodoroFlotante';
 import Rail from './components/Rail';
+import Tareas from './components/Tareas';
 import VistaMes from './components/VistaMes';
 import VistaSemana from './components/VistaSemana';
 
@@ -17,6 +19,7 @@ import { useAuth } from './hooks/useAuth';
 import { useEsMovil } from './hooks/useEsMovil';
 import { useEventos } from './hooks/useEventos';
 import { useNotificaciones } from './hooks/useNotificaciones';
+import { usePomodoro } from './hooks/usePomodoro';
 import { useTema } from './hooks/useTema';
 import {
   actualizarEvento,
@@ -44,6 +47,7 @@ export default function App() {
   const esMovil = useEsMovil();
   const { usuario, comprobando, hacenFaltaCredenciales } = useAuth();
   const notificaciones = useNotificaciones(usuario);
+  const pomodoro = usePomodoro();
 
   const [seccion, setSeccion] = useState('calendario');
   const [modo, setModo] = useState('mes');
@@ -245,13 +249,22 @@ export default function App() {
           </div>
         )}
 
-        {pantalla === 'habitos' && (
+        {(pantalla === 'habitos' || pantalla === 'tareas') && (
           <div className="flex min-h-0 grow flex-col gap-3 overflow-y-auto px-4 pb-4">
-            <Habitos oscuro={oscuro} listo={listo} compacto />
+            <div className="flex gap-2 pt-1">
+              <PestanaMovil activa={pantalla === 'habitos'} etiqueta="Hábitos" onClick={() => setPantalla('habitos')} />
+              <PestanaMovil activa={pantalla === 'tareas'} etiqueta="Tareas" onClick={() => setPantalla('tareas')} />
+            </div>
+            {pantalla === 'habitos' ? (
+              <Habitos oscuro={oscuro} listo={listo} compacto />
+            ) : (
+              <Tareas listo={listo} pomodoro={pomodoro} />
+            )}
           </div>
         )}
 
         <BarraMovil pantalla={pantalla} onPantalla={setPantalla} onChat={() => setChatAbierto('voz')} />
+        <PomodoroFlotante pomodoro={pomodoro} movil />
 
         {chatAbierto && (
           <div className="fixed inset-0 z-40 flex flex-col" style={{ background: 'var(--superficie)' }}>
@@ -338,11 +351,16 @@ export default function App() {
         <div className="flex min-w-0 grow flex-col gap-4 px-8 pb-7 pt-[26px]">
           <Habitos oscuro={oscuro} listo={listo} />
         </div>
+      ) : seccion === 'tareas' ? (
+        <div className="flex min-w-0 grow flex-col gap-4 px-8 pb-7 pt-[26px]">
+          <Tareas listo={listo} pomodoro={pomodoro} />
+        </div>
       ) : (
         <Pendiente seccion={seccion} />
       )}
 
       <PanelChat eventos={eventosProximos} oscuro={oscuro} />
+      <PomodoroFlotante pomodoro={pomodoro} />
 
       {modal && (
         <ModalEvento
@@ -391,6 +409,23 @@ function BotonCabecera({ etiqueta, onClick, children, desactivado }) {
       style={{ color: 'var(--tinta-suave)' }}
     >
       {children}
+    </button>
+  );
+}
+
+function PestanaMovil({ activa, etiqueta, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="h-9 rounded-[10px] px-3.5 text-[13px] font-medium"
+      style={{
+        background: activa ? 'var(--tinta)' : 'var(--superficie)',
+        color: activa ? 'var(--papel)' : 'var(--tinta-media)',
+        border: '1px solid var(--borde)',
+      }}
+    >
+      {etiqueta}
     </button>
   );
 }

@@ -249,6 +249,8 @@ hablar de esta semana aunque estés mirando diciembre.
 - [x] **Fase 4** — Avisos push y briefing de los lunes (código listo; te
       quedan 3 pasos manuales en Firebase/Vercel — sección de abajo)
 - [x] **Fase 5** — Hábitos: alta, racha, marcado diario y progreso del mes
+- [x] **Tareas** — lista del día, agrupable, con pomodoro (25 min, en el
+      propio navegador, sin servidor de por medio)
 - [ ] **Fase 6** — Canal externo (Telegram o WhatsApp)
 
 ## Próximos pasos

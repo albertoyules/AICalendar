@@ -270,6 +270,32 @@ prorratea el objetivo semanal sobre los días transcurridos
 del mes a secas, para que un objetivo de "3 por semana" no aparezca siempre
 por debajo del 50% aunque se cumpla siempre.
 
+## Tareas: lista por día, agrupada por texto libre, sin IA todavía
+
+`usuarios/{uid}/tareas/{tareaId}` — mismo patrón dual que hábitos y eventos
+(`tareasRepository.js`). Cada tarea pertenece a un día concreto (`fecha`,
+'YYYY-MM-DD'): es una lista de "hoy quiero hacer esto", no una lista maestra
+que arrastra sola lo no hecho de un día a otro — si no se termina, se queda
+sin marcar en el historial de ese día, y ya está. `grupo` es un texto libre
+opcional (p. ej. "Actividades") sin más significado que agrupar visualmente
+varias tareas sueltas; el agrupado es cosa del cliente (`Tareas.jsx`), no de
+la consulta a Firestore.
+
+A diferencia de hábitos y eventos, esto **no está enganchado al asistente
+todavía** — ni herramienta en `_herramientas.js` ni mención en `_prompt.js`.
+Es alta y edición a mano, sin chat de por medio. Si se pide integrarlo,
+seguiría el mismo patrón que `crear_evento`/`editar_evento`.
+
+El pomodoro (`usePomodoro.js`) vive en memoria del navegador, montado en
+`App.jsx` para sobrevivir a cambiar de pantalla — nada en Firestore, nada de
+QStash: es una cuenta atrás de 25 minutos que solo importa mientras tienes la
+app abierta, no algo que deba sonar si te vas. Guarda el instante en que
+acaba (`finEn`), no un contador que reste segundo a segundo, para no
+desincronizarse si el navegador frena el timer con la pestaña en segundo
+plano. El aviso es un pitido generado con Web Audio (sin fichero de sonido en
+el repo) más una `Notification` del navegador si hay permiso — igual que
+hábitos y eventos, pide permiso de notificaciones la primera vez que se usa.
+
 ## Diseño
 
 Maquetas fuente en `design/*.dc.html`, editables con la skill `design`.
