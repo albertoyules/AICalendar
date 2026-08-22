@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { doc, deleteDoc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { getMessaging, getToken } from 'firebase/messaging';
+import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
 import { clavePush, configFirebase, firestore, hayFirebase } from '../config/firebase';
+import { pitido } from '../lib/sonido';
 
 const SOPORTADO =
   typeof window !== 'undefined' && 'serviceWorker' in navigator && 'Notification' in window;
@@ -88,6 +89,27 @@ export function useNotificaciones(usuario) {
       vivo = false;
     };
   }, [usuario, permiso]);
+
+  // Firebase entrega los avisos de dos formas distintas según si la pestaña
+  // está en primer plano o no: en segundo plano (o cerrada) los recoge el
+  // service worker (ver firebase-messaging-sw.js), pero en primer plano el
+  // SDK los manda aquí, a onMessage() — y sin escucharlo, se pierden en
+  // silencio. Por eso el dispositivo desde el que arrancas algo (el que
+  // seguramente tienes con la pestaña abierta y mirando) podía parecer que
+  // no avisaba, mientras que el resto sí sonaban.
+  useEffect(() => {
+    if (!SOPORTADO || !hayFirebase || permiso !== 'granted') return undefined;
+    return onMessage(getMessaging(), (payload) => {
+      const titulo = payload.notification?.title ?? 'IA Calendar';
+      const cuerpo = payload.notification?.body;
+      pitido();
+      new Notification(titulo, {
+        body: cuerpo,
+        icon: '/iconos/icono-192.png',
+        tag: payload.data?.tipo ?? 'aviso',
+      });
+    });
+  }, [permiso]);
 
   const pedirPermiso = useCallback(async () => {
     if (!SOPORTADO) {

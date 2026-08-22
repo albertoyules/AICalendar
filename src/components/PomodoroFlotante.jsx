@@ -1,4 +1,4 @@
-import { Square, Timer } from 'lucide-react';
+import { ArrowRight, Square, Timer } from 'lucide-react';
 
 /**
  * Cuenta atrás visible desde cualquier pantalla mientras corre un pomodoro.
@@ -6,7 +6,7 @@ import { Square, Timer } from 'lucide-react';
  * duplicarlo solo sería ruido.
  */
 export default function PomodoroFlotante({ pomodoro, movil, oculto }) {
-  const { activo, segundosRestantes, parar } = pomodoro;
+  const { activo, segundosRestantes, continuar, parar } = pomodoro;
   if (!activo || oculto) return null;
 
   const minutos = String(Math.floor(segundosRestantes / 60)).padStart(2, '0');
@@ -23,14 +23,30 @@ export default function PomodoroFlotante({ pomodoro, movil, oculto }) {
       }
     >
       <Timer size={16} strokeWidth={1.8} />
-      <div className="flex flex-col leading-tight">
-        <span className="text-[13px] font-semibold tabular-nums">
-          {minutos}:{segundos}
-        </span>
-        <span className="max-w-[140px] truncate text-[10.5px] opacity-70">
-          {enDescanso ? 'Descanso' : `Ronda ${activo.ronda}`}
-        </span>
-      </div>
+      {activo.esperando ? (
+        <span className="text-[12px] font-medium">Esperando para {enDescanso ? 'descansar' : 'seguir'}</span>
+      ) : (
+        <div className="flex flex-col leading-tight">
+          <span className="text-[13px] font-semibold tabular-nums">
+            {minutos}:{segundos}
+          </span>
+          <span className="max-w-[140px] truncate text-[10.5px] opacity-70">
+            {enDescanso ? 'Descanso' : `Ronda ${activo.ronda}`}
+          </span>
+        </div>
+      )}
+      {activo.esperando && (
+        <button
+          type="button"
+          onClick={continuar}
+          aria-label="Seguir con el pomodoro"
+          title="Seguir"
+          className="flex h-7 w-7 items-center justify-center rounded-full"
+          style={{ background: 'rgba(255,255,255,0.14)' }}
+        >
+          <ArrowRight size={13} strokeWidth={2} />
+        </button>
+      )}
       <button
         type="button"
         onClick={parar}

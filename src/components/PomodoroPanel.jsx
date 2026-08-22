@@ -1,11 +1,48 @@
-import { Play, Square, Timer } from 'lucide-react';
+import { ArrowRight, Play, Square, Timer } from 'lucide-react';
 
 /**
  * Reloj pomodoro independiente de las tareas: minutos de trabajo, minutos de
- * descanso y número de rondas, configurables antes de arrancar.
+ * descanso y número de rondas, configurables antes de arrancar. Entre fases
+ * espera a que se pulse "Seguir" — no arranca el descanso ni la siguiente
+ * ronda por su cuenta.
  */
 export default function PomodoroPanel({ pomodoro }) {
-  const { config, setConfig, activo, segundosRestantes, iniciar, parar, error } = pomodoro;
+  const { config, setConfig, activo, segundosRestantes, iniciar, continuar, parar, error } = pomodoro;
+
+  if (activo?.esperando) {
+    const siguiente = activo.fase === 'descanso' ? 'descanso' : `ronda ${activo.ronda}`;
+    return (
+      <div
+        className="flex items-center justify-between gap-3 rounded-[14px] px-4 py-3.5"
+        style={{ background: 'var(--tinta)', color: 'var(--papel)' }}
+      >
+        <div className="flex items-center gap-3">
+          <Timer size={18} strokeWidth={1.7} />
+          <span className="text-[14px] font-medium">Toca cuando quieras empezar el {siguiente}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={continuar}
+            className="flex h-9 items-center gap-1.5 rounded-[10px] px-3.5 text-[13px] font-medium"
+            style={{ background: 'var(--papel)', color: 'var(--tinta)' }}
+          >
+            Seguir
+            <ArrowRight size={14} strokeWidth={2} />
+          </button>
+          <button
+            type="button"
+            onClick={parar}
+            aria-label="Parar el pomodoro"
+            className="flex h-9 w-9 items-center justify-center rounded-full"
+            style={{ background: 'rgba(255,255,255,0.14)' }}
+          >
+            <Square size={14} strokeWidth={2} fill="currentColor" />
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (activo) {
     const minutos = String(Math.floor(segundosRestantes / 60)).padStart(2, '0');

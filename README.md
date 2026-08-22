@@ -367,21 +367,28 @@ Nota, se lee junto con el aviso):
    llevan aviso todavía.
 
 **Ya construido — pomodoro** (reloj configurable en la pantalla de Tareas,
-avisa aunque cierres la app o bloquees el móvil):
+avisa aunque cierres la app o bloquees el móvil, en todos tus dispositivos a
+la vez):
 9. `api/pomodoro/iniciar.js` y `api/pomodoro/parar.js` — a donde llama el
    navegador al arrancar o parar el reloj. Guardan el estado
    (`usuarios/{uid}/pomodoro/actual`: fase, ronda, cuándo acaba) y programan
    o cancelan el próximo mensaje de QStash.
 10. `api/qstash/recordatorioPomodoro.js` — a donde llama QStash al acabar
-    cada fase. A diferencia de hábitos (recurrente) y eventos (uno suelto),
-    esto **se encadena solo**: cada disparo manda el aviso de la fase que
-    acaba y programa el siguiente, hasta completar las rondas pedidas.
-    Comprueba que el `finEn` que lleva en la URL coincide con el que hay
-    ahora mismo en Firestore, para descartarse solo si mientras tanto
-    pausaste o reprogramaste el reloj desde la app.
+    cada fase. Manda el aviso y deja el pomodoro **esperando** — no arranca
+    el descanso ni la siguiente ronda por su cuenta. `api/pomodoro/continuar.js`
+    es a donde llama el navegador al pulsar "Seguir", que arranca de verdad
+    la cuenta atrás de lo que tocaba.
 11. Sin Firebase configurado (modo local, para trastear sin montar nada) el
     pomodoro sigue siendo el timer de navegador de antes — sin servidor al
-    que llamar, es lo único que se puede hacer.
+    que llamar, es lo único que se puede hacer, y ahí sí encadena las fases
+    solo (no hay push que esperar).
+
+**De paso, arreglado que un dispositivo se quedaba mudo**: Firebase entrega
+los avisos de forma distinta según si tienes la pestaña en primer plano o no,
+y nada escuchaba el caso de primer plano — así que el dispositivo desde el
+que arrancabas algo (el que tenías delante, con la pestaña abierta) podía
+parecer que no avisaba, mientras el resto sí sonaban. Arreglado en
+`useNotificaciones.js` para cualquier aviso, no solo el pomodoro.
 
 **De paso, arreglado el aviso duplicado de hábitos** que quedaba pendiente:
 el candado ya no es "leer un campo y, si no está, escribirlo" (tenía una

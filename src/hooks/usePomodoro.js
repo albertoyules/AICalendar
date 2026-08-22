@@ -3,6 +3,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 
 import { firestore, hayFirebase } from '../config/firebase';
 import { idTokenActual } from '../services/auth';
+import { pitido } from '../lib/sonido';
 
 /**
  * El pomodoro. Con Firebase configurado, el reloj vive en el servidor
@@ -11,9 +12,13 @@ import { idTokenActual } from '../services/auth';
  * móvil bloqueado — antes era un timer del navegador nada más, y por eso no
  * llegaba nada si no tenías la pestaña abierta.
  *
+ * Entre fases, el reloj no sigue solo: al acabar el trabajo o el descanso,
+ * avisa y se queda "esperando" hasta que alguien pulsa "Seguir" — así el
+ * descanso no arranca de golpe si sigues a medias de algo.
+ *
  * Sin Firebase (modo local, para trastear sin montar nada) no hay servidor
- * al que llamar: usePomodoroLocal hace lo mismo que antes, un timer en
- * memoria que solo cuenta mientras la pestaña está abierta.
+ * al que llamar: usePomodoroLocal hace lo mismo, un timer en memoria que
+ * solo cuenta mientras la pestaña está abierta.
  *
  * `hayFirebase` es una constante fija al cargar la app (nunca cambia en
  * caliente), así que elegir aquí qué hook usar no rompe las reglas de los
@@ -43,7 +48,7 @@ function usePomodoroRemoto(usuario) {
   const activo = estado?.activo ? estado : null;
 
   useEffect(() => {
-    if (!activo) return undefined;
+    if (!activo || activo.esperando) return undefined;
     const id = setInterval(() => setAhora(Date.now()), 1000);
     return () => clearInterval(id);
   }, [activo]);
@@ -69,38 +74,23 @@ function usePomodoroRemoto(usuario) {
   }, []);
 
   const iniciar = useCallback(() => llamar('/api/pomodoro/iniciar', configBorrador), [llamar, configBorrador]);
+  const continuar = useCallback(() => llamar('/api/pomodoro/continuar', {}), [llamar]);
   const parar = useCallback(() => llamar('/api/pomodoro/parar', {}), [llamar]);
 
-  const segundosRestantes = activo
+  const segundosRestantes = activo && !activo.esperando
     ? Math.max(0, Math.round((activo.finEn - ahora) / 1000))
     : configBorrador.minutosTrabajo * 60;
 
   return {
     config: configBorrador,
     setConfig: setConfigBorrador,
-    activo: activo && { fase: activo.fase, ronda: activo.ronda, rondas: activo.rondas },
+    activo: activo && { fase: activo.fase, ronda: activo.ronda, rondas: activo.rondas, esperando: activo.esperando },
     segundosRestantes,
     iniciar,
+    continuar,
     parar,
     error,
   };
-}
-
-function pitido() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const ganancia = ctx.createGain();
-    osc.connect(ganancia);
-    ganancia.connect(ctx.destination);
-    osc.frequency.value = 880;
-    ganancia.gain.setValueAtTime(0.15, ctx.currentTime);
-    ganancia.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.6);
-  } catch {
-    // Sin Web Audio: sin sonido, el aviso en pantalla sigue funcionando igual.
-  }
 }
 
 function avisar(titulo, cuerpo) {
@@ -112,30 +102,33 @@ function avisar(titulo, cuerpo) {
 
 function usePomodoroLocal() {
   const [config, setConfig] = useState(CONFIG_POR_DEFECTO);
-  const [activo, setActivo] = useState(null); // { fase, ronda, rondas, finEn } | null
+  const [activo, setActivo] = useState(null); // { fase, ronda, rondas, finEn, esperando } | null
   const [ahora, setAhora] = useState(Date.now());
 
   useEffect(() => {
-    if (!activo) return undefined;
+    if (!activo || activo.esperando) return undefined;
     const id = setInterval(() => setAhora(Date.now()), 1000);
     return () => clearInterval(id);
   }, [activo]);
 
   useEffect(() => {
-    if (!activo || ahora < activo.finEn) return;
+    if (!activo || activo.esperando || ahora < activo.finEn) return;
 
-    if (activo.fase === 'trabajo') {
-      if (activo.ronda >= activo.rondas) {
-        avisar('Pomodoro completo', `${activo.rondas} rondas hechas. Buen trabajo.`);
-        setActivo(null);
-        return;
-      }
-      avisar('Descanso', `Toca descansar ${config.minutosDescanso} min.`);
-      setActivo((a) => a && { ...a, fase: 'descanso', finEn: Date.now() + config.minutosDescanso * 60_000 });
-    } else {
-      avisar('A trabajar', `Ronda ${activo.ronda + 1} de ${activo.rondas}.`);
-      setActivo((a) => a && { ...a, fase: 'trabajo', ronda: a.ronda + 1, finEn: Date.now() + config.minutosTrabajo * 60_000 });
+    if (activo.fase === 'trabajo' && activo.ronda >= activo.rondas) {
+      avisar('Pomodoro completo', `${activo.rondas} rondas hechas. Buen trabajo.`);
+      setActivo(null);
+      return;
     }
+
+    const siguienteFase = activo.fase === 'trabajo' ? 'descanso' : 'trabajo';
+    const siguienteRonda = activo.fase === 'descanso' ? activo.ronda + 1 : activo.ronda;
+    avisar(
+      siguienteFase === 'descanso' ? 'Descanso' : 'Descanso terminado',
+      siguienteFase === 'descanso'
+        ? `Toca descansar ${config.minutosDescanso} min. Sigue cuando quieras.`
+        : `Ronda ${siguienteRonda} de ${activo.rondas} cuando estés listo.`,
+    );
+    setActivo((a) => a && { ...a, fase: siguienteFase, ronda: siguienteRonda, esperando: true, finEn: null });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ahora]);
 
@@ -144,12 +137,29 @@ function usePomodoroLocal() {
       Notification.requestPermission();
     }
     setAhora(Date.now());
-    setActivo({ fase: 'trabajo', ronda: 1, rondas: config.rondas, finEn: Date.now() + config.minutosTrabajo * 60_000 });
+    setActivo({
+      fase: 'trabajo',
+      ronda: 1,
+      rondas: config.rondas,
+      finEn: Date.now() + config.minutosTrabajo * 60_000,
+      esperando: false,
+    });
+  }, [config]);
+
+  const continuar = useCallback(() => {
+    setAhora(Date.now());
+    setActivo((a) => {
+      if (!a) return a;
+      const minutos = a.fase === 'trabajo' ? config.minutosTrabajo : config.minutosDescanso;
+      return { ...a, esperando: false, finEn: Date.now() + minutos * 60_000 };
+    });
   }, [config]);
 
   const parar = useCallback(() => setActivo(null), []);
 
-  const segundosRestantes = activo ? Math.max(0, Math.round((activo.finEn - ahora) / 1000)) : config.minutosTrabajo * 60;
+  const segundosRestantes = activo && !activo.esperando
+    ? Math.max(0, Math.round((activo.finEn - ahora) / 1000))
+    : config.minutosTrabajo * 60;
 
-  return { config, setConfig, activo, segundosRestantes, iniciar, parar, error: null };
+  return { config, setConfig, activo, segundosRestantes, iniciar, continuar, parar, error: null };
 }

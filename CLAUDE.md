@@ -103,6 +103,20 @@ Un usuario puede tener varios dispositivos: cada uno es un documento en
 `localStorage` del navegador (no en el uid) para que reactivar el permiso no
 cree duplicados.
 
+**Primer plano vs segundo plano, y por qué el dispositivo "activo" podía
+parecer mudo.** Firebase Messaging entrega un push de dos formas distintas
+según el estado de la pestaña: en segundo plano (o con la app cerrada) lo
+recoge `public/firebase-messaging-sw.js` (`onBackgroundMessage`); con la
+pestaña en primer plano, el SDK lo manda al cliente por `onMessage()` — y
+durante un tiempo nada escuchaba eso, así que esos avisos se perdían en
+silencio. El dispositivo desde el que sueles arrancar algo (el que tienes
+delante, con la pestaña abierta y enfocada) es justo el que caía en ese
+hueco. `useNotificaciones.js` ahora también escucha `onMessage()` y muestra
+la notificación a mano (`new Notification(...)`) + un pitido
+(`src/lib/sonido.js`) — el mismo camino que ya usa el pomodoro local. Esto
+arregla el hueco para cualquier push (hábitos, eventos, pomodoro), no solo
+uno.
+
 ## Voz: coste cero a propósito
 
 `src/hooks/useDictado.js` y `src/hooks/useVoz.js` usan las APIs nativas del
@@ -250,21 +264,24 @@ un `new Date('...')` sin zona se interpreta en la zona del servidor de
 Vercel (UTC), no en la de Madrid, y el aviso llegaría 1-2 horas tarde según
 la época del año.
 
-### Pomodoro: ni *schedule* ni un solo mensaje — se encadena solo
+### Pomodoro: ni *schedule* ni un solo mensaje — y no encadena solo, a propósito
 
 Un hábito repite siempre a la misma hora (*schedule*) y un evento avisa una
 vez (mensaje suelto), pero un pomodoro es una secuencia de fases de
 duración variable (trabajo, descanso, trabajo...) que además se puede parar
 a media sesión — ninguno de los dos mecanismos anteriores encaja tal cual.
 
-La solución es que `api/qstash/recordatorioPomodoro.js` **se reprograma a sí
-mismo**: cada vez que QStash lo llama al acabar una fase, calcula cuál es la
-siguiente (o si ya se completaron las rondas y toca parar), manda el aviso
-de la que acaba, y si sigue habiendo pomodoro, publica un mensaje nuevo para
-la fase siguiente. El estado de verdad vive en
-`usuarios/{uid}/pomodoro/actual` (fase, ronda, `finEn`, `qstashId` del
-próximo aviso) — el navegador solo lo escucha con `onSnapshot` para pintar
-la cuenta atrás, nunca decide él la siguiente fase.
+Al acabar una fase, `api/qstash/recordatorioPomodoro.js` manda el aviso y
+deja el pomodoro **esperando** (`esperando: true`, `finEn: null`,
+`qstashId: null`) — no programa la siguiente fase por su cuenta. Hace falta
+que alguien pulse "Seguir" en la app (`api/pomodoro/continuar.js`) para que
+arranque de verdad la cuenta atrás del descanso o de la siguiente ronda.
+Es a propósito: un descanso que salta solo mientras sigues a medias de algo
+es peor que uno que espera. El estado de verdad vive en
+`usuarios/{uid}/pomodoro/actual` (fase, ronda, `esperando`, `finEn`,
+`qstashId` del próximo aviso si lo hay) — el navegador solo lo escucha con
+`onSnapshot` para pintar la cuenta atrás o el botón de "Seguir", nunca
+decide él solo qué toca.
 
 `finEn` viaja en la URL del mensaje a propósito: al llegar la llamada, se
 compara con el `finEn` que hay ahora mismo en Firestore. Si no coincide, es

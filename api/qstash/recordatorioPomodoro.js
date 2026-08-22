@@ -1,21 +1,23 @@
 /**
- * A donde llama QStash al acabar cada fase del pomodoro. A diferencia de
- * hábitos (schedule recurrente) y eventos (un mensaje suelto), el pomodoro
- * encadena: cada vez que se dispara, manda el aviso de la fase que acaba Y
- * programa el siguiente mensaje para la fase que empieza — hasta que se
- * completan las rondas pedidas o alguien para el reloj desde la app.
+ * A donde llama QStash al acabar cada fase del pomodoro.
  *
- * `finEn` va en la URL para dos cosas: además de identificar qué disparo es
- * (y servir de clave del candado anti-duplicados), permite comprobar que
- * sigue siendo el disparo "vigente" — si mientras tanto se paró o se
- * reprogramó el pomodoro, el finEn guardado en Firestore ya no coincidirá y
- * esta llamada se descarta sin mandar nada.
+ * No encadena solo: al acabar una fase, manda el aviso y deja el pomodoro
+ * "esperando" (fase y ronda ya avanzadas, pero sin cuenta atrás corriendo) —
+ * hace falta que alguien pulse "seguir" en la app para arrancar la
+ * siguiente fase (api/pomodoro/continuar.js). Así el descanso no se activa
+ * solo mientras sigues currando a medias de la tarea.
+ *
+ * `finEn` va en la URL para dos cosas: además de servir de clave del
+ * candado anti-duplicados, permite comprobar que este disparo sigue siendo
+ * el "vigente" — si mientras tanto se paró o se reprogramó el pomodoro
+ * desde la app, el finEn guardado en Firestore ya no coincidirá y esta
+ * llamada se descarta sin mandar nada.
  */
 import admin from 'firebase-admin';
 
 import { firebaseAdmin } from '../_admin.js';
 import { enviarATodosLosDispositivos, reclamarAviso } from '../_avisos.js';
-import { qstash, receptorQstash, urlBase } from '../_qstash.js';
+import { receptorQstash, urlBase } from '../_qstash.js';
 
 export default async function handler(req, res) {
   const firma = req.headers['upstash-signature'];
@@ -59,23 +61,23 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, terminado: true });
     }
 
-    const siguiente =
-      estado.fase === 'trabajo'
-        ? { fase: 'descanso', ronda: estado.ronda, finEn: Date.now() + estado.minutosDescanso * 60_000 }
-        : { fase: 'trabajo', ronda: estado.ronda + 1, finEn: Date.now() + estado.minutosTrabajo * 60_000 };
+    const siguienteFase = estado.fase === 'trabajo' ? 'descanso' : 'trabajo';
+    const siguienteRonda = estado.fase === 'descanso' ? estado.ronda + 1 : estado.ronda;
 
     const mensaje =
-      siguiente.fase === 'descanso'
-        ? { titulo: 'Descanso', cuerpo: `Toca descansar ${estado.minutosDescanso} min.` }
-        : { titulo: 'A trabajar', cuerpo: `Ronda ${siguiente.ronda} de ${estado.rondas}.` };
+      siguienteFase === 'descanso'
+        ? { titulo: 'Descanso', cuerpo: `Toca descansar ${estado.minutosDescanso} min. Sigue cuando quieras.` }
+        : { titulo: 'Descanso terminado', cuerpo: `Ronda ${siguienteRonda} de ${estado.rondas} cuando estés listo.` };
 
     await enviarATodosLosDispositivos(refUsuario, { ...mensaje, tipo: 'pomodoro' });
 
-    const destino = `${urlBase()}/api/qstash/recordatorioPomodoro?uid=${encodeURIComponent(uid)}&finEn=${siguiente.finEn}`;
-    const { messageId } = await qstash().publish({ url: destino, notBefore: Math.floor(siguiente.finEn / 1000) });
-
-    await refPomodoro.set({ ...siguiente, qstashId: messageId }, { merge: true });
-    res.status(200).json({ ok: true });
+    // Esperando confirmación: sin finEn ni qstashId, no hay cuenta atrás
+    // corriendo hasta que se llame a api/pomodoro/continuar.js.
+    await refPomodoro.set(
+      { fase: siguienteFase, ronda: siguienteRonda, esperando: true, finEn: null, qstashId: null },
+      { merge: true },
+    );
+    res.status(200).json({ ok: true, esperando: true });
   } catch (error) {
     console.error('[qstash/recordatorioPomodoro]', error);
     res.status(500).json({ error: error.message ?? 'Fallo inesperado.' });

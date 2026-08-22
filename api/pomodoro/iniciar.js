@@ -50,6 +50,7 @@ export default async function handler(req, res) {
       rondas: total,
       minutosTrabajo: trabajo,
       minutosDescanso: descanso,
+      esperando: false,
       finEn,
       qstashId: messageId,
     });
