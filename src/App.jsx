@@ -258,13 +258,13 @@ export default function App() {
             {pantalla === 'habitos' ? (
               <Habitos oscuro={oscuro} listo={listo} compacto />
             ) : (
-              <Tareas listo={listo} pomodoro={pomodoro} />
+              <Tareas oscuro={oscuro} listo={listo} pomodoro={pomodoro} />
             )}
           </div>
         )}
 
         <BarraMovil pantalla={pantalla} onPantalla={setPantalla} onChat={() => setChatAbierto('voz')} />
-        <PomodoroFlotante pomodoro={pomodoro} movil />
+        <PomodoroFlotante pomodoro={pomodoro} movil oculto={pantalla === 'tareas'} />
 
         {chatAbierto && (
           <div className="fixed inset-0 z-40 flex flex-col" style={{ background: 'var(--superficie)' }}>
@@ -353,14 +353,14 @@ export default function App() {
         </div>
       ) : seccion === 'tareas' ? (
         <div className="flex min-w-0 grow flex-col gap-4 px-8 pb-7 pt-[26px]">
-          <Tareas listo={listo} pomodoro={pomodoro} />
+          <Tareas oscuro={oscuro} listo={listo} pomodoro={pomodoro} />
         </div>
       ) : (
         <Pendiente seccion={seccion} />
       )}
 
       <PanelChat eventos={eventosProximos} oscuro={oscuro} />
-      <PomodoroFlotante pomodoro={pomodoro} />
+      <PomodoroFlotante pomodoro={pomodoro} oculto={seccion === 'tareas'} />
 
       {modal && (
         <ModalEvento

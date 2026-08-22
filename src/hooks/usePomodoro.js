@@ -1,19 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
 
 /**
- * Un pomodoro por vez, para toda la app — vive en App.jsx, no en la pantalla
- * de Tareas, para que si cambias a Calendario un momento no se pare solo.
+ * Un reloj pomodoro para toda la app — vive en App.jsx, no en Tareas, para
+ * que cambiar de pantalla no lo pare y para que algún día pueda arrancarse
+ * desde cualquier sitio, no solo desde una tarea concreta.
  *
- * Todo en memoria, nada en Firestore: una sesión de 25 minutos no merece la
- * complejidad de sincronizarla entre dispositivos, y si recargas la página
- * a media sesión, empezar de nuevo es lo razonable.
+ * Todo en memoria, nada en Firestore: una sesión de trabajo no merece la
+ * complejidad de sincronizarla entre dispositivos, y si recargas la página a
+ * media sesión, empezar de nuevo es lo razonable.
  *
- * Se guarda el instante en que acaba (`finEn`), no un contador que reste
- * segundo a segundo: así una pestaña en segundo plano (donde los navegadores
- * frenan los timers) no se desincroniza, el tiempo real siempre manda.
+ * Se guarda el instante en que acaba la fase (`finEn`), no un contador que
+ * reste segundo a segundo: así una pestaña en segundo plano (donde los
+ * navegadores frenan los timers) no se desincroniza, el reloj real manda.
  */
-const MINUTOS_TRABAJO = 25;
-const MINUTOS_DESCANSO = 5;
+const CONFIG_POR_DEFECTO = { minutosTrabajo: 25, minutosDescanso: 5, rondas: 4 };
 
 function pitido() {
   try {
@@ -33,17 +33,16 @@ function pitido() {
   }
 }
 
-function avisar(fase) {
+function avisar(titulo, cuerpo) {
   pitido();
   if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-    const titulo = fase === 'trabajo' ? 'Pomodoro terminado' : 'Descanso terminado';
-    const cuerpo = fase === 'trabajo' ? 'Toca descansar 5 minutos.' : 'A por el siguiente bloque.';
     new Notification(titulo, { body: cuerpo });
   }
 }
 
 export function usePomodoro() {
-  const [activo, setActivo] = useState(null); // { tareaId, titulo, fase, finEn } | null
+  const [config, setConfig] = useState(CONFIG_POR_DEFECTO);
+  const [activo, setActivo] = useState(null); // { fase, ronda, finEn } | null
   const [ahora, setAhora] = useState(Date.now());
 
   useEffect(() => {
@@ -54,26 +53,35 @@ export function usePomodoro() {
 
   useEffect(() => {
     if (!activo || ahora < activo.finEn) return;
-    avisar(activo.fase);
-    const siguienteFase = activo.fase === 'trabajo' ? 'descanso' : 'trabajo';
-    const minutos = siguienteFase === 'trabajo' ? MINUTOS_TRABAJO : MINUTOS_DESCANSO;
-    setActivo((actual) =>
-      actual ? { ...actual, fase: siguienteFase, finEn: Date.now() + minutos * 60_000 } : actual,
-    );
+
+    if (activo.fase === 'trabajo') {
+      if (activo.ronda >= config.rondas) {
+        avisar('Pomodoro completo', `${config.rondas} rondas hechas. Buen trabajo.`);
+        setActivo(null);
+        return;
+      }
+      avisar('Descanso', `Toca descansar ${config.minutosDescanso} min.`);
+      setActivo((a) => a && { fase: 'descanso', ronda: a.ronda, finEn: Date.now() + config.minutosDescanso * 60_000 });
+    } else {
+      avisar('A trabajar', `Ronda ${activo.ronda + 1} de ${config.rondas}.`);
+      setActivo((a) => a && { fase: 'trabajo', ronda: a.ronda + 1, finEn: Date.now() + config.minutosTrabajo * 60_000 });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ahora]);
 
-  const iniciar = useCallback((tareaId, titulo) => {
+  const iniciar = useCallback(() => {
     if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
       Notification.requestPermission();
     }
     setAhora(Date.now());
-    setActivo({ tareaId, titulo, fase: 'trabajo', finEn: Date.now() + MINUTOS_TRABAJO * 60_000 });
-  }, []);
+    setActivo({ fase: 'trabajo', ronda: 1, finEn: Date.now() + config.minutosTrabajo * 60_000 });
+  }, [config]);
 
   const parar = useCallback(() => setActivo(null), []);
 
-  const segundosRestantes = activo ? Math.max(0, Math.round((activo.finEn - ahora) / 1000)) : 0;
+  const segundosRestantes = activo
+    ? Math.max(0, Math.round((activo.finEn - ahora) / 1000))
+    : config.minutosTrabajo * 60;
 
-  return { activo, segundosRestantes, iniciar, parar };
+  return { config, setConfig, activo, segundosRestantes, iniciar, parar };
 }

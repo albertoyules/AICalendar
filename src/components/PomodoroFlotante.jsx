@@ -1,9 +1,13 @@
 import { Square, Timer } from 'lucide-react';
 
-/** Cuenta atrás visible desde cualquier pantalla mientras corre un pomodoro. */
-export default function PomodoroFlotante({ pomodoro, movil }) {
+/**
+ * Cuenta atrás visible desde cualquier pantalla mientras corre un pomodoro.
+ * No se pinta en la propia pantalla de Tareas — ahí ya se ve en PomodoroPanel,
+ * duplicarlo solo sería ruido.
+ */
+export default function PomodoroFlotante({ pomodoro, movil, oculto }) {
   const { activo, segundosRestantes, parar } = pomodoro;
-  if (!activo) return null;
+  if (!activo || oculto) return null;
 
   const minutos = String(Math.floor(segundosRestantes / 60)).padStart(2, '0');
   const segundos = String(segundosRestantes % 60).padStart(2, '0');
@@ -24,7 +28,7 @@ export default function PomodoroFlotante({ pomodoro, movil }) {
           {minutos}:{segundos}
         </span>
         <span className="max-w-[140px] truncate text-[10.5px] opacity-70">
-          {enDescanso ? 'Descanso' : activo.titulo}
+          {enDescanso ? 'Descanso' : `Ronda ${activo.ronda}`}
         </span>
       </div>
       <button

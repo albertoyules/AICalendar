@@ -279,22 +279,44 @@ que arrastra sola lo no hecho de un día a otro — si no se termina, se queda
 sin marcar en el historial de ese día, y ya está. `grupo` es un texto libre
 opcional (p. ej. "Actividades") sin más significado que agrupar visualmente
 varias tareas sueltas; el agrupado es cosa del cliente (`Tareas.jsx`), no de
-la consulta a Firestore.
+la consulta a Firestore. `categoria` es opcional, una de las cuatro de
+`config/categorias.js` — solo para el punto de color, no cambia nada más.
+
+**Lección cara aprendida aquí**: `suscribirTareas()` NO lleva `orderBy` en la
+consulta a Firestore, aunque `eventosRepository.js` y `habitosRepository.js`
+sí ordenan sus consultas. La diferencia importa: `where('fecha','==',fecha)`
+(igualdad) + `orderBy('creadoEn')` (campo distinto) es exactamente el patrón
+que Firestore obliga a tener un índice compuesto — sin él, `onSnapshot` no
+entrega nada nuevo y la tarea recién creada solo aparecía al volver a
+suscribirse (cambiar de día y volver). `eventosDelUsuario` y el `orderBy`
+de hábitos evitan esto porque ordenan por el MISMO campo del filtro, o no
+filtran nada. Si algún día hace falta ordenar una consulta con filtro de
+igualdad, ordena en el cliente (como aquí) en vez de añadir el índice —
+menos que mantener y nada que romperse si Firestore cambia de opinión.
 
 A diferencia de hábitos y eventos, esto **no está enganchado al asistente
 todavía** — ni herramienta en `_herramientas.js` ni mención en `_prompt.js`.
 Es alta y edición a mano, sin chat de por medio. Si se pide integrarlo,
 seguiría el mismo patrón que `crear_evento`/`editar_evento`.
 
-El pomodoro (`usePomodoro.js`) vive en memoria del navegador, montado en
-`App.jsx` para sobrevivir a cambiar de pantalla — nada en Firestore, nada de
-QStash: es una cuenta atrás de 25 minutos que solo importa mientras tienes la
-app abierta, no algo que deba sonar si te vas. Guarda el instante en que
-acaba (`finEn`), no un contador que reste segundo a segundo, para no
-desincronizarse si el navegador frena el timer con la pestaña en segundo
-plano. El aviso es un pitido generado con Web Audio (sin fichero de sonido en
-el repo) más una `Notification` del navegador si hay permiso — igual que
-hábitos y eventos, pide permiso de notificaciones la primera vez que se usa.
+El pomodoro (`usePomodoro.js`) es independiente de las tareas a propósito —
+no arranca "desde" una tarea concreta, es un reloj configurable aparte
+(minutos de trabajo, minutos de descanso, número de rondas) que se enseña en
+`PomodoroPanel.jsx`. Vive en memoria del navegador, montado en `App.jsx` para
+sobrevivir a cambiar de pantalla — nada en Firestore, nada de QStash: una
+sesión de pomodoro solo importa mientras tienes la app abierta, no algo que
+deba sonar si te vas. Guarda el instante en que acaba la fase (`finEn`), no
+un contador que reste segundo a segundo, para no desincronizarse si el
+navegador frena el timer con la pestaña en segundo plano. Al acabar las
+rondas configuradas, se para solo. El aviso es un pitido generado con Web
+Audio (sin fichero de sonido en el repo) más una `Notification` del
+navegador si hay permiso — igual que hábitos y eventos, pide permiso de
+notificaciones la primera vez que se usa.
+
+`PomodoroFlotante.jsx` es la píldora que se ve desde cualquier pantalla
+mientras corre — se oculta a propósito en la propia pantalla de Tareas
+(`oculto` prop) porque ahí ya está `PomodoroPanel` a la vista, y verlo dos
+veces sería ruido.
 
 ## Diseño
 

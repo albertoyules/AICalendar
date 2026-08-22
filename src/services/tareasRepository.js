@@ -11,17 +11,7 @@
  * para agrupar varias tareas sueltas en la pantalla — no tiene más
  * significado que ese, es solo una etiqueta.
  */
-import {
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  onSnapshot,
-  orderBy,
-  query,
-  updateDoc,
-  where,
-} from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, onSnapshot, query, updateDoc, where } from 'firebase/firestore';
 
 import { firestore, hayFirebase } from '../config/firebase';
 import { hoy } from '../lib/fechas';
@@ -55,6 +45,7 @@ export function normalizarTarea(bruto) {
   return {
     titulo: String(bruto.titulo ?? '').trim() || 'Sin título',
     grupo: bruto.grupo?.trim() || null,
+    categoria: bruto.categoria || null,
     fecha: bruto.fecha ?? hoy(),
     hecha: Boolean(bruto.hecha),
   };
@@ -96,10 +87,19 @@ export function suscribirTareas(fecha, alCambiar, alFallar) {
     return () => oyentes.delete(emitir);
   }
 
-  const consulta = query(coleccionTareas(), where('fecha', '==', fecha), orderBy('creadoEn'));
+  // Sin orderBy en la propia consulta a propósito: combinar un where de
+  // igualdad con un orderBy de OTRO campo pide un índice compuesto que no
+  // existe por defecto en Firestore — la app se quedaba sin poder escuchar
+  // nada hasta que alguien creara ese índice a mano en la consola. Ordenar
+  // aquí, en el propio cliente, evita esa dependencia por completo.
+  const consulta = query(coleccionTareas(), where('fecha', '==', fecha));
   return onSnapshot(
     consulta,
-    (snap) => alCambiar(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+    (snap) => {
+      const tareas = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      tareas.sort((a, b) => (a.creadoEn ?? '').localeCompare(b.creadoEn ?? ''));
+      alCambiar(tareas);
+    },
     (error) => {
       console.error('[IA Calendar] Firestore (tareas):', error);
       alFallar?.(error);
