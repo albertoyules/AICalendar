@@ -36,12 +36,7 @@ export default function LoginScreen() {
   return (
     <div className="flex h-[100dvh] w-screen flex-col items-center justify-center px-6">
       <div className="flex w-full max-w-[340px] flex-col items-center gap-7">
-        <div
-          className="flex h-14 w-14 items-center justify-center rounded-2xl text-[30px] leading-none"
-          style={{ background: 'var(--tinta)', color: 'var(--papel)', fontFamily: 'var(--font-serif)' }}
-        >
-          i
-        </div>
+        <img src="/iconos/icono-192.png" alt="" className="h-14 w-14 rounded-2xl" />
 
         <div className="flex flex-col items-center gap-3 text-center">
           <h1

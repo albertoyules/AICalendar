@@ -167,12 +167,7 @@ export default function App() {
     return (
       <div className="flex h-[100dvh] w-screen flex-col overflow-hidden">
         <div className="seguro-arriba flex shrink-0 items-center justify-between px-5 pb-2">
-          <div
-            className="flex h-8 w-8 items-center justify-center rounded-[9px] text-[16px] leading-none"
-            style={{ background: 'var(--tinta)', color: 'var(--papel)', fontFamily: 'var(--font-serif)' }}
-          >
-            i
-          </div>
+          <img src="/iconos/icono-192.png" alt="" className="h-8 w-8 rounded-[9px]" />
           <div className="flex items-center gap-1">
             <BotonCabecera etiqueta={oscuro ? 'Tema claro' : 'Tema oscuro'} onClick={alternar}>
               {oscuro ? <Sun size={19} strokeWidth={1.6} /> : <Moon size={19} strokeWidth={1.6} />}

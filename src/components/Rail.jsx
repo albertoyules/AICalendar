@@ -16,12 +16,7 @@ export default function Rail({ vista, onVista, oscuro, onTema, usuario, onSalir,
       className="flex w-[72px] shrink-0 flex-col items-center gap-7 py-[22px]"
       style={{ background: 'var(--superficie)', borderRight: '1px solid var(--borde)' }}
     >
-      <div
-        className="flex h-[34px] w-[34px] items-center justify-center rounded-[10px] text-[19px] leading-none"
-        style={{ background: 'var(--tinta)', color: 'var(--papel)', fontFamily: 'var(--font-serif)' }}
-      >
-        i
-      </div>
+      <img src="/iconos/icono-192.png" alt="" className="h-[34px] w-[34px] rounded-[10px]" />
 
       <div className="flex flex-col items-center gap-1.5">
         {botones.map(({ id, icono: Icono, etiqueta }) => {
