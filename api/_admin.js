@@ -31,3 +31,16 @@ export function firebaseAdmin() {
   app = admin.initializeApp({ credential: admin.credential.cert(credenciales) });
   return app;
 }
+
+/**
+ * El uid de una sesión real, a partir del idToken que manda el navegador.
+ * Nunca te fíes de un uid que venga suelto en el cuerpo de una petición —
+ * cualquiera podría escribir en nombre de otro con solo saber el suyo, que
+ * no es secreto. Usado por cualquier endpoint que el cliente llame para
+ * tocar sus propios datos (hábitos, eventos, pomodoro...).
+ */
+export async function uidDesdeToken(idToken) {
+  firebaseAdmin();
+  const decodificado = await admin.auth().verifyIdToken(idToken);
+  return decodificado.uid;
+}

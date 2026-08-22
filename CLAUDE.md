@@ -165,19 +165,19 @@ recurrentes, asistente por texto y voz con herramientas, sesión con Google,
 Firestore por usuario, móvil instalable, avisos push (diario + semanal;
 código completo, pendiente de que el usuario complete 3 pasos manuales en
 Firebase/Vercel — ver README), despliegue en Vercel, hábitos con rachas,
-recordatorio diario a hora exacta por hábito y avisos sueltos "X antes" por
-evento (con nota opcional), los dos vía Upstash QStash — código completo,
-pendiente de que el usuario cree la cuenta gratuita (ver README). Viewport
-móvil fijado (sin zoom, sin que el teclado deforme el layout).
+recordatorio diario a hora exacta por hábito, avisos sueltos "X antes" por
+evento (con nota opcional), tareas del día con color de categoría, y un
+pomodoro configurable que avisa por push real con la app cerrada — los
+cuatro últimos vía Upstash QStash, código completo, pendiente de que el
+usuario cree la cuenta gratuita (ver README). Viewport móvil fijado (sin
+zoom, sin que el teclado deforme el layout).
 
 Sin construir: canal externo (WhatsApp/Telegram — decidido: Telegram primero,
 reutilizando `api/_cerebro.js::pensar()`), y avisos en eventos repetidos
 (una serie no lleva "avísame antes" — multiplicaría los mensajes de QStash
 por cada ocurrencia). Detalle de cada uno en «Próximos pasos» del README.
-Bug conocido sin arreglar: avisos de hábito duplicados (carrera en el
-candado de `api/qstash/recordatorio.js` — ver «Bugs conocidos» del README).
 
-## QStash: quién dispara los avisos de hábito y de evento, y por qué no es Vercel Cron
+## QStash: quién dispara los avisos de hábito, evento y pomodoro, y por qué no es Vercel Cron
 
 Los avisos de fase 4 (diario, semanal) usan Vercel Cron porque son "una vez al
 día, hora fija de todo el proyecto" — encaja perfecto. Un aviso de hábito a
@@ -250,6 +250,57 @@ un `new Date('...')` sin zona se interpreta en la zona del servidor de
 Vercel (UTC), no en la de Madrid, y el aviso llegaría 1-2 horas tarde según
 la época del año.
 
+### Pomodoro: ni *schedule* ni un solo mensaje — se encadena solo
+
+Un hábito repite siempre a la misma hora (*schedule*) y un evento avisa una
+vez (mensaje suelto), pero un pomodoro es una secuencia de fases de
+duración variable (trabajo, descanso, trabajo...) que además se puede parar
+a media sesión — ninguno de los dos mecanismos anteriores encaja tal cual.
+
+La solución es que `api/qstash/recordatorioPomodoro.js` **se reprograma a sí
+mismo**: cada vez que QStash lo llama al acabar una fase, calcula cuál es la
+siguiente (o si ya se completaron las rondas y toca parar), manda el aviso
+de la que acaba, y si sigue habiendo pomodoro, publica un mensaje nuevo para
+la fase siguiente. El estado de verdad vive en
+`usuarios/{uid}/pomodoro/actual` (fase, ronda, `finEn`, `qstashId` del
+próximo aviso) — el navegador solo lo escucha con `onSnapshot` para pintar
+la cuenta atrás, nunca decide él la siguiente fase.
+
+`finEn` viaja en la URL del mensaje a propósito: al llegar la llamada, se
+compara con el `finEn` que hay ahora mismo en Firestore. Si no coincide, es
+que se paró o se reprogramó el pomodoro desde la app mientras el mensaje
+viejo seguía en la cola de QStash — se descarta sin mandar nada, en vez de
+avisar de una fase que ya no existe.
+
+`api/pomodoro/parar.js` cancela el `qstashId` pendiente con
+`client.messages.cancel()` antes de marcar `activo: false` — sin eso, el
+aviso ya programado llegaría igual aunque hubieras parado el reloj en la app.
+
+Sin Firebase configurado (modo local), nada de esto existe: `usePomodoro.js`
+elige entre `usePomodoroRemoto` (Firestore + QStash) y `usePomodoroLocal`
+(el timer de navegador de siempre, solo mientras la pestaña esté abierta)
+mirando la constante `hayFirebase` — fija al cargar la app, así que no
+rompe las reglas de los hooks aunque parezca una condición.
+
+### Evitar avisos duplicados: `reclamarAviso()`, no "leer y luego escribir"
+
+Los tres avisos por QStash (hábito, evento, pomodoro) comparten el mismo
+riesgo: QStash puede invocar la función más de una vez casi a la vez —no
+necesariamente un reintento tardío, puede ser prácticamente simultáneo—, y
+si el candado es "leer un campo, comprobar si ya se avisó, y si no escribir
+que sí", dos invocaciones pueden leer "no enviado" antes de que ninguna
+llegue a escribir. Eso pasó de verdad con los hábitos y se veía como avisos
+duplicados en el móvil y el ordenador a la vez.
+
+El arreglo es `reclamarAviso()` en `api/_avisos.js`: crea un documento
+centinela con `.create()` de Firestore Admin, que **falla si el documento ya
+existe** (`ALREADY_EXISTS`). Eso sí es atómico — de dos invocaciones
+concurrentes, Firestore solo deja que una gane la creación, la otra recibe
+el error y no manda nada. La clave del centinela cambia según el caso (la
+fecha para hábitos, el `messageId`/`finEn` para eventos y pomodoro, algo que
+identifique de forma única *este* disparo, no el hábito/evento en general) y
+vive en una subcolección `avisos` colgando del propio documento.
+
 ## Hábitos: un documento por hábito, sin subcolección de marcas
 
 `usuarios/{uid}/habitos/{habitoId}` — mismo patrón dual Firestore/localStorage
@@ -302,16 +353,17 @@ seguiría el mismo patrón que `crear_evento`/`editar_evento`.
 El pomodoro (`usePomodoro.js`) es independiente de las tareas a propósito —
 no arranca "desde" una tarea concreta, es un reloj configurable aparte
 (minutos de trabajo, minutos de descanso, número de rondas) que se enseña en
-`PomodoroPanel.jsx`. Vive en memoria del navegador, montado en `App.jsx` para
-sobrevivir a cambiar de pantalla — nada en Firestore, nada de QStash: una
-sesión de pomodoro solo importa mientras tienes la app abierta, no algo que
-deba sonar si te vas. Guarda el instante en que acaba la fase (`finEn`), no
-un contador que reste segundo a segundo, para no desincronizarse si el
-navegador frena el timer con la pestaña en segundo plano. Al acabar las
-rondas configuradas, se para solo. El aviso es un pitido generado con Web
-Audio (sin fichero de sonido en el repo) más una `Notification` del
-navegador si hay permiso — igual que hábitos y eventos, pide permiso de
-notificaciones la primera vez que se usa.
+`PomodoroPanel.jsx`. Con Firebase configurado vive en el servidor (Firestore
++ QStash encadenado, ver «Pomodoro: ni *schedule* ni un solo mensaje» más
+abajo) para seguir avisando con la app cerrada; el navegador solo escucha el
+estado con `onSnapshot` para pintar la cuenta atrás. Sin Firebase (modo
+local) cae a un timer de navegador de toda la vida, que guarda el instante
+en que acaba la fase (`finEn`) en vez de un contador que reste segundo a
+segundo, para no desincronizarse si el navegador frena el timer en segundo
+plano — pero ahí sí deja de avisar en cuanto cierras la pestaña, es la
+limitación real de no tener servidor detrás. El aviso, en los dos casos, es
+un pitido generado con Web Audio (sin fichero de sonido en el repo) más una
+`Notification` del navegador si hay permiso.
 
 `PomodoroFlotante.jsx` es la píldora que se ve desde cualquier pantalla
 mientras corre — se oculta a propósito en la propia pantalla de Tareas

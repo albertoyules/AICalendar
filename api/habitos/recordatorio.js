@@ -8,16 +8,8 @@
  * su uid, que no es secreto pero tampoco algo que deba bastar para escribir
  * en su cuenta.
  */
-import admin from 'firebase-admin';
-
-import { firebaseAdmin } from '../_admin.js';
+import { uidDesdeToken } from '../_admin.js';
 import { idScheduleHabito, qstash, urlBase } from '../_qstash.js';
-
-async function uidDesdeToken(idToken) {
-  firebaseAdmin();
-  const decodificado = await admin.auth().verifyIdToken(idToken);
-  return decodificado.uid;
-}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido.' });

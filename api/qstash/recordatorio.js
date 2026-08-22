@@ -9,7 +9,7 @@
 import admin from 'firebase-admin';
 
 import { firebaseAdmin } from '../_admin.js';
-import { enviarATodosLosDispositivos } from '../_avisos.js';
+import { enviarATodosLosDispositivos, reclamarAviso } from '../_avisos.js';
 import { receptorQstash, urlBase } from '../_qstash.js';
 import { hoyMadrid } from '../cron/_comun.js';
 
@@ -40,12 +40,13 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, omitido: 'hábito ya no existe o sin aviso activo' });
     }
 
-    // QStash reintenta (hasta 5 veces por defecto) si esta función no
-    // responde a tiempo — algo fácil en un arranque en frío, aunque el push
-    // ya se haya mandado antes de que Vercel corte la función. Sin este
-    // candado, cada reintento manda el mismo aviso otra vez.
+    // QStash puede invocar esto más de una vez casi a la vez (reintento sin
+    // esperar respuesta) — reclamar el día antes de mandar nada es lo único
+    // que de verdad evita el duplicado, un simple "ya se avisó hoy" leído
+    // antes de escribir deja una ventana de carrera.
     const hoy = hoyMadrid();
-    if (habitoSnap.data().ultimoAvisoEnviado === hoy) {
+    const reclamado = await reclamarAviso(refHabito.collection('avisos').doc(hoy));
+    if (!reclamado) {
       return res.status(200).json({ ok: true, omitido: 'ya se avisó hoy' });
     }
 
@@ -54,7 +55,6 @@ export default async function handler(req, res) {
       cuerpo: `No olvides: ${habitoSnap.data().nombre}`,
       tipo: 'habito',
     });
-    if (enviados > 0) await refHabito.set({ ultimoAvisoEnviado: hoy }, { merge: true });
     res.status(200).json({ ok: true, enviados, fallos });
   } catch (error) {
     console.error('[qstash/recordatorio]', error);

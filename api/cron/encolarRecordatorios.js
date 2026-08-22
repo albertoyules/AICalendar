@@ -46,7 +46,7 @@ export default async function handler(req, res) {
         try {
           const destino = `${urlBase()}/api/qstash/recordatorioEvento?uid=${encodeURIComponent(refUsuario.id)}&eventoId=${encodeURIComponent(doc.id)}`;
           const { messageId } = await qstash().publish({ url: destino, notBefore: Math.floor(objetivoMs / 1000) });
-          await doc.ref.set({ recordatorioIdQstash: messageId, recordatorioEnviado: false }, { merge: true });
+          await doc.ref.set({ recordatorioIdQstash: messageId }, { merge: true });
           programados += 1;
         } catch (error) {
           console.error('[cron/encolarRecordatorios]', doc.id, error);

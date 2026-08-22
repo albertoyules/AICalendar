@@ -249,8 +249,9 @@ hablar de esta semana aunque estés mirando diciembre.
 - [x] **Fase 4** — Avisos push y briefing de los lunes (código listo; te
       quedan 3 pasos manuales en Firebase/Vercel — sección de abajo)
 - [x] **Fase 5** — Hábitos: alta, racha, marcado diario y progreso del mes
-- [x] **Tareas** — lista del día, agrupable, con pomodoro (25 min, en el
-      propio navegador, sin servidor de por medio)
+- [x] **Tareas** — lista del día, agrupable, con color de categoría y un
+      pomodoro configurable (minutos, descanso, rondas) que avisa por push
+      real, con la app cerrada o el móvil bloqueado
 - [ ] **Fase 6** — Canal externo (Telegram o WhatsApp)
 
 ## Próximos pasos
@@ -365,6 +366,31 @@ Nota, se lee junto con el aviso):
    día) — solo con hora concreta y sin repetición; los eventos repetidos no
    llevan aviso todavía.
 
+**Ya construido — pomodoro** (reloj configurable en la pantalla de Tareas,
+avisa aunque cierres la app o bloquees el móvil):
+9. `api/pomodoro/iniciar.js` y `api/pomodoro/parar.js` — a donde llama el
+   navegador al arrancar o parar el reloj. Guardan el estado
+   (`usuarios/{uid}/pomodoro/actual`: fase, ronda, cuándo acaba) y programan
+   o cancelan el próximo mensaje de QStash.
+10. `api/qstash/recordatorioPomodoro.js` — a donde llama QStash al acabar
+    cada fase. A diferencia de hábitos (recurrente) y eventos (uno suelto),
+    esto **se encadena solo**: cada disparo manda el aviso de la fase que
+    acaba y programa el siguiente, hasta completar las rondas pedidas.
+    Comprueba que el `finEn` que lleva en la URL coincide con el que hay
+    ahora mismo en Firestore, para descartarse solo si mientras tanto
+    pausaste o reprogramaste el reloj desde la app.
+11. Sin Firebase configurado (modo local, para trastear sin montar nada) el
+    pomodoro sigue siendo el timer de navegador de antes — sin servidor al
+    que llamar, es lo único que se puede hacer.
+
+**De paso, arreglado el aviso duplicado de hábitos** que quedaba pendiente:
+el candado ya no es "leer un campo y, si no está, escribirlo" (tenía una
+carrera real si QStash invocaba la función dos veces casi a la vez), sino un
+documento centinela creado con `.create()` de Firestore Admin —
+`reclamarAviso()` en `api/_avisos.js` — que solo deja ganar a una de las
+invocaciones concurrentes. Se aplica ahora a hábitos, eventos y pomodoro por
+igual.
+
 **Solo puedes hacerlo tú, fuera de este repo:**
 1. Crear cuenta gratis en [upstash.com](https://upstash.com) → QStash → copiar
    `QSTASH_URL`, `QSTASH_TOKEN` y las dos claves de firma
@@ -394,8 +420,7 @@ deben.
 **Lo que queda fuera, a propósito:** avisos en eventos repetidos (una serie
 diaria/semanal no lleva "avísame antes" por ahora — multiplicaría los mensajes
 de QStash por cada ocurrencia, la mayoría fuera de la ventana de 7 días de
-todos modos). También pendiente el bug de avisos duplicados de hábitos —
-sección "Bugs conocidos" más abajo.
+todos modos).
 
 ### Fase 6 — WhatsApp o Telegram
 
@@ -411,21 +436,6 @@ mensaje de Telegram, transcribe si es audio, y llama a la misma
 tubo de entrada. Si más adelante quieres WhatsApp de verdad: Cloud API de
 Meta, con un número de teléfono que no sea tu WhatsApp personal (una SIM
 prepago sirve) y plantillas preaprobadas para poder escribir tú primero.
-
-### Bugs conocidos
-
-- **El aviso de hábito llega duplicado.** Confirmado en pruebas: llega dos
-  veces, casi a la vez, tanto en móvil como en ordenador. El candado
-  `ultimoAvisoEnviado` en `api/qstash/recordatorio.js` no lo arregló porque es
-  "leer y luego escribir", no atómico — si QStash invoca la función dos veces
-  casi a la vez (no un reintento tardío, sino algo prácticamente simultáneo),
-  las dos lecturas pasan el candado antes de que ninguna de las dos escrituras
-  llegue a tiempo. El arreglo de verdad es un "claim" atómico: un documento
-  centinela por día (p. ej. `usuarios/{uid}/habitos/{id}/avisos/{fecha}`)
-  creado con `.create()` de Firestore Admin — ese método falla con
-  `ALREADY_EXISTS` si el documento ya existe, así que solo una de las dos
-  invocaciones concurrentes puede "ganar" y mandar el push. No es urgente (el
-  usuario lo puede vivir con avisos duplicados por ahora); pendiente de hacer.
 
 ### Otras mejoras a valorar
 

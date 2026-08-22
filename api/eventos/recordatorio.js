@@ -13,15 +13,9 @@
  */
 import admin from 'firebase-admin';
 
-import { firebaseAdmin } from '../_admin.js';
+import { firebaseAdmin, uidDesdeToken } from '../_admin.js';
 import { instanteMadrid } from '../cron/_comun.js';
 import { MAX_ADELANTO_SEGUNDOS, qstash, urlBase } from '../_qstash.js';
-
-async function uidDesdeToken(idToken) {
-  firebaseAdmin();
-  const decodificado = await admin.auth().verifyIdToken(idToken);
-  return decodificado.uid;
-}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido.' });
@@ -72,9 +66,7 @@ export default async function handler(req, res) {
 
     const destino = `${urlBase()}/api/qstash/recordatorioEvento?uid=${encodeURIComponent(uid)}&eventoId=${encodeURIComponent(eventoId)}`;
     const { messageId } = await qstash().publish({ url: destino, notBefore: Math.floor(objetivoMs / 1000) });
-    // recordatorioEnviado en falso: es un aviso nuevo, aunque el mismo
-    // evento ya hubiera mandado uno antes de reprogramarse.
-    await refEvento.set({ recordatorioIdQstash: messageId, recordatorioEnviado: false }, { merge: true });
+    await refEvento.set({ recordatorioIdQstash: messageId }, { merge: true });
     res.status(200).json({ ok: true, mensaje: messageId });
   } catch (error) {
     console.error('[eventos/recordatorio]', error);

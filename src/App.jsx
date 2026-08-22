@@ -47,7 +47,7 @@ export default function App() {
   const esMovil = useEsMovil();
   const { usuario, comprobando, hacenFaltaCredenciales } = useAuth();
   const notificaciones = useNotificaciones(usuario);
-  const pomodoro = usePomodoro();
+  const pomodoro = usePomodoro(usuario);
 
   const [seccion, setSeccion] = useState('calendario');
   const [modo, setModo] = useState('mes');

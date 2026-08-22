@@ -53,3 +53,24 @@ export async function enviarATodosLosDispositivos(refUsuario, { titulo, cuerpo, 
 
   return { enviados: resultados.filter((r) => r.status === 'fulfilled').length, fallos };
 }
+
+/**
+ * "Reclama" un aviso de forma atómica antes de mandarlo, para que dos
+ * invocaciones casi simultáneas (QStash reintentando sin esperar a que la
+ * primera responda) no lo manden dos veces.
+ *
+ * Un "leer y luego escribir" (comprobar un campo y, si no está, ponerlo) no
+ * sirve: dos invocaciones pueden leer "no enviado" a la vez, antes de que
+ * ninguna de las dos llegue a escribir. `create()` sí es atómico de verdad —
+ * Firestore solo deja que una de las dos escrituras concurrentes de un mismo
+ * documento gane, la otra falla con ALREADY_EXISTS. Por eso el candado es un
+ * documento centinela aparte, no un campo del propio hábito o evento.
+ */
+export async function reclamarAviso(refCentinela) {
+  try {
+    await refCentinela.create({ enviadoEn: new Date().toISOString() });
+    return true;
+  } catch {
+    return false;
+  }
+}

@@ -9,7 +9,7 @@
 import admin from 'firebase-admin';
 
 import { firebaseAdmin } from '../_admin.js';
-import { enviarATodosLosDispositivos } from '../_avisos.js';
+import { enviarATodosLosDispositivos, reclamarAviso } from '../_avisos.js';
 import { receptorQstash, urlBase } from '../_qstash.js';
 
 function textoCuanto(minutos) {
@@ -51,9 +51,12 @@ export default async function handler(req, res) {
     if (!snap.exists || !evento.recordatorioMinutosAntes) {
       return res.status(200).json({ ok: true, omitido: 'evento ya no existe o sin aviso activo' });
     }
-    // Mismo candado que los hábitos, para un reintento de QStash que caiga
-    // sobre un aviso que ya se mandó.
-    if (evento.recordatorioEnviado) {
+    // Reclamo atómico por mensaje (no por evento): así reprogramar el aviso
+    // — cancela el mensaje viejo y crea uno nuevo, ver eventos/recordatorio.js
+    // — deja sitio para un aviso nuevo de verdad, sin arrastrar el candado
+    // del anterior.
+    const reclamado = await reclamarAviso(refEvento.collection('avisos').doc(evento.recordatorioIdQstash));
+    if (!reclamado) {
       return res.status(200).json({ ok: true, omitido: 'ya se avisó de este evento' });
     }
 
@@ -66,7 +69,6 @@ export default async function handler(req, res) {
       cuerpo,
       tipo: 'evento',
     });
-    if (enviados > 0) await refEvento.set({ recordatorioEnviado: true }, { merge: true });
     res.status(200).json({ ok: true, enviados, fallos });
   } catch (error) {
     console.error('[qstash/recordatorioEvento]', error);
