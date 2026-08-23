@@ -331,14 +331,27 @@ recurrentes con precisión al minuto, y mensajes sueltos a hora exacta con
 hasta 7 días de antelación). El código ya está escrito y en `main`; solo
 faltan las cosas de la lista de abajo, que solo puedes hacer tú.
 
+**Límite del plan Hobby que ya se comió una vez: 12 Serverless Functions por
+despliegue.** No es la cuota de QStash, es la de Vercel — cada fichero nuevo
+bajo `api/` (que no empiece por `_`) cuenta, y con hábitos + eventos +
+pomodoro + recordatorios como ficheros sueltos se pasaba, con el build
+fallando en seco. Por eso las cinco rutas "QStash llama de vuelta aquí" viven
+juntas en `api/qstash/[tipo].js` (ruta dinámica, `req.query.tipo` decide cuál
+tocaba) en vez de un fichero por tipo de aviso. Si se añade un sexto tipo de
+aviso, va ahí dentro, no como fichero nuevo.
+
 **Ya construido — hábitos** (aviso diario a una hora fija, vía *schedule*
 recurrente):
 1. `api/_qstash.js` — cliente y verificador de firma de QStash, mismo patrón
    perezoso que `firebaseAdmin()` en `_admin.js`.
-2. `api/qstash/recordatorio.js` — a donde llama QStash a la hora exacta.
-   Verifica la firma, relee el hábito en Firestore (por si cambió de nombre
-   desde que se programó el aviso) y manda el push con la misma función de
-   `api/_avisos.js` que ya usan los avisos de fase 4.
+2. `api/qstash/[tipo].js` (con `tipo=recordatorio`) — a donde llama QStash a
+   la hora exacta. Verifica la firma, relee el hábito en Firestore (por si
+   cambió de nombre desde que se programó el aviso) y manda el push con la
+   misma función de `api/_avisos.js` que ya usan los avisos de fase 4. Es una
+   ruta dinámica compartida con los otros cuatro tipos de aviso de abajo — el
+   plan Hobby de Vercel solo admite 12 Serverless Functions por despliegue,
+   y tenerlos como ficheros sueltos se pasaba; `req.query.tipo` dice a cada
+   llamada cuál de los cinco tocaba, la URL de cada uno no cambia.
 3. `api/habitos/recordatorio.js` — a donde llama el navegador cuando creas,
    editas o borras un hábito con aviso. Verifica tu sesión de Firebase (el uid
    nunca se fía de lo que mande el navegador) y da de alta o retira el
@@ -356,9 +369,9 @@ Nota, se lee junto con el aviso):
    mensaje suelto (no un *schedule*), así que solo se puede programar si cae
    dentro de los 7 días del plan gratuito; si el evento está más lejos, se
    deja pendiente sin id.
-6. `api/qstash/recordatorioEvento.js` — a donde llama QStash a la hora
-   programada. Igual que el de hábitos: firma verificada, relee el evento
-   fresco antes de mandar el push (con la nota si la hay).
+6. `api/qstash/[tipo].js` (con `tipo=recordatorioEvento`) — a donde llama
+   QStash a la hora programada. Igual que el de hábitos: firma verificada,
+   relee el evento fresco antes de mandar el push (con la nota si la hay).
 7. `api/cron/encolarRecordatorios.js` — cron diario nuevo (añadido a
    `vercel.json`) que revisa qué eventos con aviso pendiente ya han entrado
    dentro de la ventana de 7 días y los programa de verdad. Así un aviso
@@ -375,8 +388,8 @@ la vez):
    navegador al arrancar o parar el reloj. Guardan el estado
    (`usuarios/{uid}/pomodoro/actual`: fase, ronda, cuándo acaba) y programan
    o cancelan el próximo mensaje de QStash.
-10. `api/qstash/recordatorioPomodoro.js` — a donde llama QStash al acabar
-    cada fase. Manda el aviso y deja el pomodoro **esperando** — no arranca
+10. `api/qstash/[tipo].js` (con `tipo=recordatorioPomodoro`) — a donde llama
+    QStash al acabar cada fase. Manda el aviso y deja el pomodoro **esperando** — no arranca
     el descanso ni la siguiente ronda por su cuenta. `api/pomodoro/continuar.js`
     es a donde llama el navegador al pulsar "Seguir", que arranca de verdad
     la cuenta atrás de lo que tocaba.
@@ -394,10 +407,11 @@ inventar uno nuevo.
     recurrente (como los hábitos, con los días marcados en el propio cron);
     si es único publica un mensaje suelto (como los eventos, con el mismo
     límite de 7 días).
-13. `api/qstash/recordatorioSemanal.js` y `api/qstash/recordatorioUnico.js` —
-    a donde llama QStash de vuelta en cada caso. El único, al sonar, se marca
-    `hecho: true` en vez de borrarse solo: decides tú cuándo quitarlo de la
-    lista. El semanal sigue sonando cada semana hasta que lo borras.
+13. `api/qstash/[tipo].js` (con `tipo=recordatorioSemanal` o
+    `recordatorioUnico`) — a donde llama QStash de vuelta en cada caso. El
+    único, al sonar, se marca `hecho: true` en vez de borrarse solo: decides
+    tú cuándo quitarlo de la lista. El semanal sigue sonando cada semana
+    hasta que lo borras.
 14. `api/cron/encolarRecordatorios.js` (el mismo cron diario de los eventos)
     también revisa los recordatorios únicos que se crearon con más de 7 días
     de antelación y los programa de verdad en cuanto entran en la ventana.

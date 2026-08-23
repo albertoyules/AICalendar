@@ -202,6 +202,21 @@ por cron y la hora es la misma para cualquier cron que definas en
 `vercel.json`, no algo que puedas variar por usuario u objeto en tiempo de
 ejecución. Upstash QStash sí: sus *schedules* se crean y borran por código.
 
+**Los cinco "QStash llama de vuelta aquí" son UN solo fichero, no cinco.**
+`api/qstash/[tipo].js` es una ruta dinámica de Vercel: la URL de cada aviso
+sigue siendo la de siempre (`/api/qstash/recordatorio`,
+`/api/qstash/recordatorioEvento`, `/api/qstash/recordatorioPomodoro`,
+`/api/qstash/recordatorioSemanal`, `/api/qstash/recordatorioUnico` — nadie que
+programa un aviso tiene que cambiar nada), pero las cinco caen en la misma
+función y `req.query.tipo` dice cuál tocaba. No es una preferencia de estilo:
+el plan Hobby de Vercel limita a 12 Serverless Functions por despliegue, y
+tenerlos sueltos (más las rutas de alta, más chat/salud/crons) lo superaba —
+el build empezó a fallar en seco con "No more than 12 Serverless Functions"
+al añadir los recordatorios. Si se añade un sexto tipo de aviso en el futuro,
+va como una función más dentro de `AVISOS` en ese mismo fichero, no como un
+fichero nuevo — cada fichero nuevo bajo `api/` (sin `_`) cuenta para el
+límite, aunque sea diminuto.
+
 Dos rutas nuevas en `api/`, **fuera** del par cerebro/servidor de siempre —
 QStash no tiene equivalente en `server/` porque necesita una URL pública de
 verdad, no puede llamar a tu localhost:
@@ -214,12 +229,12 @@ verdad, no puede llamar a tu localhost:
   *schedule* en QStash con un id determinista (`idScheduleHabito()` en
   `_qstash.js`): crear con el mismo id sobrescribe el anterior, así que
   cambiar la hora de aviso de un hábito no dispara duplicados.
-- `api/qstash/recordatorio.js` — la llama QStash a la hora programada.
-  Verifica la firma con `Receiver` de `@upstash/qstash` (nunca te fíes de una
-  petición que dice venir de QStash sin comprobarlo) y relee el hábito en
-  Firestore antes de mandar el push, en vez de guardar su nombre en el propio
-  *schedule* — así si le cambias el nombre después de programar el aviso,
-  llega el nombre nuevo.
+- `api/qstash/[tipo].js` (con `tipo=recordatorio`) — la llama QStash a la hora
+  programada. Verifica la firma con `Receiver` de `@upstash/qstash` (nunca te
+  fíes de una petición que dice venir de QStash sin comprobarlo) y relee el
+  hábito en Firestore antes de mandar el push, en vez de guardar su nombre en
+  el propio *schedule* — así si le cambias el nombre después de programar el
+  aviso, llega el nombre nuevo.
 
 Toda la identificación (uid, habitoId) viaja en la URL de destino del
 *schedule*, no en un cuerpo JSON — evita la ambigüedad de qué acepta la API de
@@ -241,8 +256,8 @@ solo admite `notBefore` hasta 7 días vista (`MAX_ADELANTO_SEGUNDOS` en
 
 Tres piezas, mismo reparto que los hábitos (`api/eventos/recordatorio.js` lo
 registra desde el navegador con idToken verificado,
-`api/qstash/recordatorioEvento.js` es a donde QStash llama de vuelta), más
-una nueva por el límite de 7 días:
+`api/qstash/[tipo].js` con `tipo=recordatorioEvento` es a donde QStash llama
+de vuelta), más una nueva por el límite de 7 días:
 
 - Si al guardar el evento el aviso cae dentro de la ventana, se publica al
   momento y se guarda el `messageId` en `recordatorioIdQstash`.
@@ -273,7 +288,7 @@ vez (mensaje suelto), pero un pomodoro es una secuencia de fases de
 duración variable (trabajo, descanso, trabajo...) que además se puede parar
 a media sesión — ninguno de los dos mecanismos anteriores encaja tal cual.
 
-Al acabar una fase, `api/qstash/recordatorioPomodoro.js` manda el aviso y
+Al acabar una fase, `api/qstash/[tipo].js` (con `tipo=recordatorioPomodoro`) manda el aviso y
 deja el pomodoro **esperando** (`esperando: true`, `finEn: null`,
 `qstashId: null`) — no programa la siguiente fase por su cuenta. Hace falta
 que alguien pulse "Seguir" en la app (`api/pomodoro/continuar.js`) para que
