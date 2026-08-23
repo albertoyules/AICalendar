@@ -1,14 +1,16 @@
 /**
- * Recoge los "avísame X antes" de eventos que se quedaron sin programar
- * porque estaban demasiado lejos para el plan gratuito de QStash (más de
- * 6,5 días vista) y ya han entrado dentro de la ventana.
+ * Recoge los "avísame X antes" de eventos y los recordatorios únicos que se
+ * quedaron sin programar porque estaban demasiado lejos para el plan
+ * gratuito de QStash (más de 6,5 días vista) y ya han entrado dentro de la
+ * ventana.
  *
- * api/eventos/recordatorio.js programa el aviso al momento cuando puede; si
- * no puede, deja el evento con recordatorioMinutosAntes puesto pero sin
+ * api/eventos/recordatorio.js y api/recordatorios/programar.js programan el
+ * aviso al momento cuando pueden; si no pueden, dejan el documento sin
  * recordatorioIdQstash. Este cron, una vez al día, revisa los próximos días
- * y programa de verdad los que ya caben dentro del plazo — el mismo evento
- * puede tardar varios días en "entrar" si se creó con mucha antelación, y
- * eso está bien: se recoge solo, sin que nadie tenga que volver a tocarlo.
+ * y programa de verdad los que ya caben dentro del plazo — el mismo evento o
+ * recordatorio puede tardar varios días en "entrar" si se creó con mucha
+ * antelación, y eso está bien: se recoge solo, sin que nadie tenga que
+ * volver a tocarlo.
  */
 import { sumarDias } from '../../src/lib/fechas.js';
 import { MAX_ADELANTO_SEGUNDOS, qstash, urlBase } from '../_qstash.js';
@@ -51,6 +53,34 @@ export default async function handler(req, res) {
         } catch (error) {
           console.error('[cron/encolarRecordatorios]', doc.id, error);
           fallos.push({ eventoId: doc.id, error: error.message });
+        }
+      }
+
+      // Recordatorios únicos: rango en 'fecha' (único campo indexado sin
+      // índice compuesto — los semanales tienen fecha: null y quedan fuera
+      // del rango solos, no hace falta filtrar por tipo en la consulta).
+      const snapRecordatorios = await refUsuario
+        .collection('recordatorios')
+        .where('fecha', '>=', hoy)
+        .where('fecha', '<=', hasta)
+        .get();
+
+      for (const doc of snapRecordatorios.docs) {
+        const recordatorio = doc.data();
+        if (recordatorio.tipo !== 'unico' || recordatorio.hecho || recordatorio.recordatorioIdQstash) continue;
+
+        const objetivoMs = instanteMadrid(`${recordatorio.fecha}T${recordatorio.hora}`);
+        const faltanSegundos = Math.floor((objetivoMs - Date.now()) / 1000);
+        if (faltanSegundos <= 0 || faltanSegundos > MAX_ADELANTO_SEGUNDOS) continue;
+
+        try {
+          const destino = `${urlBase()}/api/qstash/recordatorioUnico?uid=${encodeURIComponent(refUsuario.id)}&recordatorioId=${encodeURIComponent(doc.id)}`;
+          const { messageId } = await qstash().publish({ url: destino, notBefore: Math.floor(objetivoMs / 1000) });
+          await doc.ref.set({ recordatorioIdQstash: messageId }, { merge: true });
+          programados += 1;
+        } catch (error) {
+          console.error('[cron/encolarRecordatorios]', doc.id, error);
+          fallos.push({ recordatorioId: doc.id, error: error.message });
         }
       }
     }

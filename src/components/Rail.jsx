@@ -1,4 +1,4 @@
-import { Activity, Bell, BellOff, Calendar, ListChecks, LogOut, Moon, RotateCw, Search, Sun } from 'lucide-react';
+import { Activity, AlarmClock, Bell, BellOff, Calendar, ListChecks, LogOut, Moon, RotateCw, Search, Sun } from 'lucide-react';
 
 /**
  * Barra estrecha de la izquierda. Es solo navegacion: no lleva nada que se
@@ -9,6 +9,7 @@ export default function Rail({ vista, onVista, oscuro, onTema, usuario, onSalir,
     { id: 'calendario', icono: Calendar, etiqueta: 'Calendario' },
     { id: 'habitos', icono: Activity, etiqueta: 'Hábitos' },
     { id: 'tareas', icono: ListChecks, etiqueta: 'Tareas' },
+    { id: 'recordatorios', icono: AlarmClock, etiqueta: 'Recordatorios' },
     { id: 'buscar', icono: Search, etiqueta: 'Buscar' },
   ];
 

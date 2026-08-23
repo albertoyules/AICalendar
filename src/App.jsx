@@ -9,6 +9,7 @@ import ModalEvento from './components/ModalEvento';
 import PanelChat from './components/PanelChat';
 import PomodoroFlotante from './components/PomodoroFlotante';
 import Rail from './components/Rail';
+import Recordatorios from './components/Recordatorios';
 import Tareas from './components/Tareas';
 import VistaMes from './components/VistaMes';
 import VistaSemana from './components/VistaSemana';
@@ -249,16 +250,19 @@ export default function App() {
           </div>
         )}
 
-        {(pantalla === 'habitos' || pantalla === 'tareas') && (
+        {(pantalla === 'habitos' || pantalla === 'tareas' || pantalla === 'recordatorios') && (
           <div className="flex min-h-0 grow flex-col gap-3 overflow-y-auto px-4 pb-4">
             <div className="flex gap-2 pt-1">
               <PestanaMovil activa={pantalla === 'habitos'} etiqueta="Hábitos" onClick={() => setPantalla('habitos')} />
               <PestanaMovil activa={pantalla === 'tareas'} etiqueta="Tareas" onClick={() => setPantalla('tareas')} />
+              <PestanaMovil activa={pantalla === 'recordatorios'} etiqueta="Recordatorios" onClick={() => setPantalla('recordatorios')} />
             </div>
             {pantalla === 'habitos' ? (
               <Habitos oscuro={oscuro} listo={listo} compacto />
-            ) : (
+            ) : pantalla === 'tareas' ? (
               <Tareas oscuro={oscuro} listo={listo} pomodoro={pomodoro} />
+            ) : (
+              <Recordatorios oscuro={oscuro} listo={listo} />
             )}
           </div>
         )}
@@ -354,6 +358,10 @@ export default function App() {
       ) : seccion === 'tareas' ? (
         <div className="flex min-w-0 grow flex-col gap-4 px-8 pb-7 pt-[26px]">
           <Tareas oscuro={oscuro} listo={listo} pomodoro={pomodoro} />
+        </div>
+      ) : seccion === 'recordatorios' ? (
+        <div className="flex min-w-0 grow flex-col gap-4 px-8 pb-7 pt-[26px]">
+          <Recordatorios oscuro={oscuro} listo={listo} />
         </div>
       ) : (
         <Pendiente seccion={seccion} />

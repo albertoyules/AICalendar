@@ -252,6 +252,8 @@ hablar de esta semana aunque estés mirando diciembre.
 - [x] **Tareas** — lista del día, agrupable, con color de categoría y un
       pomodoro configurable (minutos, descanso, rondas) que avisa por push
       real, con la app cerrada o el móvil bloqueado
+- [x] **Recordatorios** — avisos sueltos ("recuérdame que..."), puntuales o
+      semanales, a mano o pidiéndoselo al asistente
 - [ ] **Fase 6** — Canal externo (Telegram o WhatsApp)
 
 ## Próximos pasos
@@ -382,6 +384,23 @@ la vez):
     pomodoro sigue siendo el timer de navegador de antes — sin servidor al
     que llamar, es lo único que se puede hacer, y ahí sí encadena las fases
     solo (no hay push que esperar).
+
+**Ya construido — recordatorios** (pestaña propia, avisos sueltos que no son
+eventos del calendario — "recuérdame sacar la basura" — a mano o pidiéndoselo
+al asistente): combina los dos mecanismos de arriba según el tipo, sin
+inventar uno nuevo.
+12. `api/recordatorios/programar.js` — a donde llama el navegador al crear,
+    editar o borrar un recordatorio. Si es semanal da de alta un *schedule*
+    recurrente (como los hábitos, con los días marcados en el propio cron);
+    si es único publica un mensaje suelto (como los eventos, con el mismo
+    límite de 7 días).
+13. `api/qstash/recordatorioSemanal.js` y `api/qstash/recordatorioUnico.js` —
+    a donde llama QStash de vuelta en cada caso. El único, al sonar, se marca
+    `hecho: true` en vez de borrarse solo: decides tú cuándo quitarlo de la
+    lista. El semanal sigue sonando cada semana hasta que lo borras.
+14. `api/cron/encolarRecordatorios.js` (el mismo cron diario de los eventos)
+    también revisa los recordatorios únicos que se crearon con más de 7 días
+    de antelación y los programa de verdad en cuanto entran en la ventana.
 
 **De paso, arreglado que un dispositivo se quedaba mudo**: Firebase entrega
 los avisos de forma distinta según si tienes la pestaña en primer plano o no,

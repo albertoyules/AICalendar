@@ -127,4 +127,55 @@ export const HERRAMIENTAS = [
       required: ['serieId'],
     },
   },
+  {
+    name: 'crear_recordatorio',
+    description:
+      'Da de alta un aviso suelto ("recuérdame que...") que no es una cita ni tiene que aparecer en el calendario — solo un empujón a una hora concreta, una vez o cada semana. Para citas, clases o turnos con su propia fecha, usa crear_evento en su lugar.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        texto: {
+          type: 'string',
+          description: 'Lo que hay que recordar, corto y tal como lo diría el usuario. "Tirar la basura", no "Recordatorio para sacar la basura".',
+        },
+        tipo: {
+          type: 'string',
+          enum: ['unico', 'semanal'],
+          description: '"unico" para una sola vez ("recuérdame mañana..."). "semanal" para que se repita cada semana ("cada lunes...", "los martes y jueves...").',
+        },
+        fecha: { type: 'string', description: "Solo con tipo 'unico'. 'YYYY-MM-DD'." },
+        dias: {
+          type: 'array',
+          items: { type: 'integer', minimum: 0, maximum: 6 },
+          description: "Solo con tipo 'semanal'. Días de la semana en que suena: lunes=0 ... domingo=6.",
+        },
+        hora: {
+          type: 'string',
+          description: "'HH:mm' en 24h. Si el usuario no da hora, usa una razonable (p. ej. '09:00') en vez de preguntar.",
+        },
+        categoria: {
+          type: 'string',
+          enum: ['universidad', 'trabajo', 'salud', 'random'],
+          description: 'Opcional, solo para el punto de color en la lista. Si no encaja claramente en ninguna, omite el campo.',
+        },
+      },
+      required: ['texto', 'tipo', 'hora'],
+    },
+  },
+  {
+    name: 'consultar_recordatorios',
+    description: 'Lee los recordatorios guardados (puntuales y semanales). Úsala antes de borrar uno, o si preguntan qué recordatorios hay.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'borrar_recordatorio',
+    description: 'Elimina un recordatorio. Es irreversible: consulta antes si no tienes claro el id, y confirma si hay más de un candidato.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'El id que devolvió consultar_recordatorios.' },
+      },
+      required: ['id'],
+    },
+  },
 ];

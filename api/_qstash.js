@@ -56,6 +56,19 @@ export function idScheduleHabito(uid, habitoId) {
   return `habito-${uid}-${habitoId}`;
 }
 
+/** Igual que idScheduleHabito, para los recordatorios semanales. */
+export function idScheduleRecordatorio(uid, recordatorioId) {
+  return `recordatorio-${uid}-${recordatorioId}`;
+}
+
+/**
+ * Lunes=0...domingo=6 (convención de la app, ver indiceSemana en fechas.js)
+ * -> día de semana de cron (domingo=0...sábado=6, el que espera QStash).
+ */
+export function diaCron(diaApp) {
+  return (diaApp + 1) % 7;
+}
+
 /**
  * El plan gratuito de QStash solo admite mandar un mensaje suelto (no un
  * *schedule*) hasta 7 días vista. Se deja medio día de margen por si el cron

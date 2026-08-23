@@ -180,11 +180,13 @@ Firestore por usuario, móvil instalable, avisos push (diario + semanal;
 código completo, pendiente de que el usuario complete 3 pasos manuales en
 Firebase/Vercel — ver README), despliegue en Vercel, hábitos con rachas,
 recordatorio diario a hora exacta por hábito, avisos sueltos "X antes" por
-evento (con nota opcional), tareas del día con color de categoría, y un
-pomodoro configurable que avisa por push real con la app cerrada — los
-cuatro últimos vía Upstash QStash, código completo, pendiente de que el
-usuario cree la cuenta gratuita (ver README). Viewport móvil fijado (sin
-zoom, sin que el teclado deforme el layout).
+evento (con nota opcional), tareas del día con color de categoría, un
+pomodoro configurable que avisa por push real con la app cerrada, y
+recordatorios sueltos puntuales o semanales ("recuérdame que...", pestaña
+propia y enganchados al asistente) — los cinco últimos vía Upstash QStash,
+código completo, pendiente de que el usuario cree la cuenta gratuita (ver
+README). Viewport móvil fijado (sin zoom, sin que el teclado deforme el
+layout).
 
 Sin construir: canal externo (WhatsApp/Telegram — decidido: Telegram primero,
 reutilizando `api/_cerebro.js::pensar()`), y avisos en eventos repetidos
@@ -386,6 +388,59 @@ un pitido generado con Web Audio (sin fichero de sonido en el repo) más una
 mientras corre — se oculta a propósito en la propia pantalla de Tareas
 (`oculto` prop) porque ahí ya está `PomodoroPanel` a la vista, y verlo dos
 veces sería ruido.
+
+## Recordatorios: avisos sueltos, no eventos del calendario
+
+`usuarios/{uid}/recordatorios/{recordatorioId}` — mismo patrón dual que
+hábitos, tareas y eventos (`recordatoriosRepository.js`). La diferencia con un
+evento es de propósito: "recuérdame sacar la basura" no tiene sentido como
+algo que aparezca en el mes o la semana, es solo un empujón a una hora. Por
+eso viven en su propia pestaña (`Recordatorios.jsx`), no en el calendario.
+
+Dos tipos, sin documento plantilla compartido — cada uno reutiliza tal cual
+uno de los dos mecanismos de QStash que ya existían, en vez de inventar uno
+nuevo:
+
+- **`unico`** — `fecha` + `hora`. Igual que el aviso "X antes" de un evento:
+  un mensaje suelto de QStash, con el límite de 7 días del plan gratuito
+  (`api/cron/encolarRecordatorios.js`, ya compartido con eventos, recoge los
+  que se crean más lejos). Al sonar se marca `hecho: true` — **no se borra
+  solo**: el usuario decide cuándo quitarlo de la lista, como una tarea.
+- **`semanal`** — `dias` (lunes=0...domingo=6, la convención de
+  `indiceSemana()`) + `hora`. Igual que el aviso diario de un hábito: un
+  único *schedule* recurrente de QStash por recordatorio (no uno por día),
+  con la lista de días ya en el propio cron
+  (`CRON_TZ=Europe/Madrid m h * * d1,d2,...`). Sigue sonando cada semana
+  hasta que se borra a mano.
+
+`diaCron()` en `api/_qstash.js` traduce la convención de la app (lunes=0) al
+día de semana que espera cron (domingo=0): `(diaApp + 1) % 7`. Si se te
+olvida esta conversión, el aviso suena el día de al lado.
+
+`api/recordatorios/programar.js` hace las dos cosas de golpe (a diferencia de
+hábitos y eventos, que tienen un endpoint cada uno): antes de decidir qué
+programar, siempre intenta borrar el *schedule* semanal (por id determinista,
+`idScheduleRecordatorio()`) y cancelar el mensaje único anterior si lo había
+— así cambiar de tipo (de "cada lunes" a "solo mañana", o al revés) no deja
+un aviso huérfano sonando por su cuenta.
+
+El cron diario que recoge los recordatorios únicos lejanos usa
+`.where('fecha', '>=', hoy).where('fecha', '<=', hasta)` — rango en un único
+campo, sin filtrar por `tipo` en la consulta (eso exigiría un índice
+compuesto, ver la lección de tareas más arriba). Funciona solo porque los
+recordatorios semanales guardan `fecha: null`, y Firestore excluye los
+documentos con ese campo a `null` de cualquier filtro de rango — quedan fuera
+sin que el código tenga que descartarlos a mano.
+
+Como tareas, **tampoco tenía tool en el asistente hasta ahora**: a diferencia
+de tareas, aquí sí se enganchó desde el principio
+(`crear_recordatorio`/`consultar_recordatorios`/`borrar_recordatorio` en
+`_herramientas.js`, sección propia en `_prompt.js`) porque "recuérdame que…"
+es lenguaje tan natural que dejarlo solo para alta a mano habría sido dejar
+la mitad del valor sobre la mesa. El prompt decide entre crear_recordatorio y
+crear_evento por una sola pregunta: ¿tiene sentido esto en el calendario
+(cita, clase, turno) o es solo un aviso suelto? Si dudas al leer el prompt,
+esa es la pregunta que había que resolver.
 
 ## Diseño
 

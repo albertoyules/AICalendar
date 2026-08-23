@@ -4,6 +4,7 @@ import { hayFirebase } from '../config/firebase';
 import { establecerUsuario, migrarDesdeLocal } from '../services/eventosRepository';
 import { establecerUsuario as establecerUsuarioHabitos } from '../services/habitosRepository';
 import { establecerUsuario as establecerUsuarioTareas } from '../services/tareasRepository';
+import { establecerUsuario as establecerUsuarioRecordatorios } from '../services/recordatoriosRepository';
 import { observarSesion } from '../services/auth';
 
 /**
@@ -23,6 +24,7 @@ export function useAuth() {
       establecerUsuario(nuevo?.uid ?? null);
       establecerUsuarioHabitos(nuevo?.uid ?? null);
       establecerUsuarioTareas(nuevo?.uid ?? null);
+      establecerUsuarioRecordatorios(nuevo?.uid ?? null);
       if (nuevo) await migrarDesdeLocal();
       setUsuario(nuevo);
       setComprobando(false);

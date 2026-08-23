@@ -21,6 +21,7 @@ import {
   guardarEvento,
   leerEventos,
 } from './eventosRepository';
+import { borrarRecordatorio, crearRecordatorio, leerRecordatorios } from './recordatoriosRepository';
 import { hoy, lunesDe, nombreDia, semanaDe, sumarDias } from '../lib/fechas';
 
 /** Tope de seguridad: si se pasa de aqui es que algo esta en bucle. */
@@ -129,6 +130,32 @@ const ACCIONES = {
 
   async borrar_serie({ serieId }) {
     await borrarSerie(serieId);
+    return { ok: true };
+  },
+
+  async crear_recordatorio(datos) {
+    const id = await crearRecordatorio({ ...datos, creadoPor: 'ia' });
+    return { ok: true, id };
+  },
+
+  async consultar_recordatorios() {
+    const recordatorios = await leerRecordatorios();
+    if (recordatorios.length === 0) return { vacio: true, mensaje: 'No hay recordatorios guardados.' };
+    return {
+      recordatorios: recordatorios.map((r) => ({
+        id: r.id,
+        texto: r.texto,
+        tipo: r.tipo,
+        fecha: r.fecha ?? undefined,
+        dias: r.dias ?? undefined,
+        hora: r.hora,
+        hecho: r.tipo === 'unico' ? Boolean(r.hecho) : undefined,
+      })),
+    };
+  },
+
+  async borrar_recordatorio({ id }) {
+    await borrarRecordatorio(id);
     return { ok: true };
   },
 };
