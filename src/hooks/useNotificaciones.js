@@ -90,6 +90,20 @@ export function useNotificaciones(usuario) {
     };
   }, [usuario, permiso]);
 
+  // El registro del service worker solo se hace a mano, dentro de
+  // pedirPermiso() — recargar la página no vuelve a llamar a register(), y
+  // el navegador por su cuenta solo comprueba si hay una versión nueva del
+  // fichero cada ~24h (menos si acaba de comprobarlo). Así que desplegar un
+  // arreglo en firebase-messaging-sw.js podía tardar hasta un día en llegar
+  // a quien lo tuviera abierto, aunque recargara — pasó de verdad con el
+  // cambio a mandar el aviso por `data`. `registration.update()` fuerza esa
+  // comprobación (ignora el temporizador de 24h) en cada carga de la app
+  // para quien ya tenga el permiso concedido.
+  useEffect(() => {
+    if (!SOPORTADO || permiso !== 'granted') return;
+    navigator.serviceWorker.getRegistration().then((registro) => registro?.update());
+  }, [permiso]);
+
   // Firebase entrega los avisos de dos formas distintas según si la pestaña
   // está en primer plano o no: en segundo plano (o cerrada) los recoge el
   // service worker (ver firebase-messaging-sw.js), pero en primer plano el

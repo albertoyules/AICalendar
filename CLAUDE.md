@@ -111,6 +111,20 @@ en segundo plano, `useNotificaciones.js::onMessage` en primer plano. Si algún
 día se añade un campo nuevo al aviso, que vaya a `data`, nunca a
 `notification`.
 
+**Un service worker nuevo puede tardar hasta 24h en llegar, aunque
+recargues.** `register()` solo se llama a mano dentro de `pedirPermiso()` —
+recargar la página no lo vuelve a llamar, y el navegador por su cuenta
+comprueba si hay una versión nueva del fichero como mucho una vez al día. Esto
+mordió de verdad tras el cambio a mandar el aviso por `data`: quien ya tenía
+el permiso concedido siguió con el service worker viejo (que esperaba
+`notification.title/body`) horas después de desplegar el arreglo, pese a
+recargar. `useNotificaciones.js` ahora llama a
+`registration.update()` en cada carga de la app si el permiso ya está
+concedido — eso sí ignora el temporizador de 24h y fuerza la comprobación.
+Sigue haciendo falta un `skipWaiting()`/`clients.claim()` en el propio SW
+(ver más abajo) para que, una vez detectada la versión nueva, tome el control
+sin esperar a que se cierren todas las pestañas.
+
 Un usuario puede tener varios dispositivos: cada uno es un documento en
 `usuarios/{uid}/dispositivos/{idLocal}`, con `idLocal` guardado en
 `localStorage` del navegador (no en el uid) para que reactivar el permiso no
