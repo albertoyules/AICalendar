@@ -160,6 +160,37 @@ añades una superficie nueva, que salga de ahí.
   publicarlas (`npm run reglas`).
 - `/api/salud?probar=1` diagnostica la configuración sin exponer secretos.
 
+## Eventos de varios días: el dato ya existía, faltaba la banda
+
+Un evento con `fin` en un día posterior al de `inicio` (el viaje que ocupa
+28-30, al estilo del Calendario de iPhone) siempre fue válido en el esquema —
+`crearSerieRecurrente` ya lo maneja con `desplazamientoFin` — pero
+`ModalEvento.jsx` solo dejaba picar la hora de fin, nunca un día distinto, y
+la vista de mes los pintaba como una píldora repetida por celda.
+
+- `ModalEvento.jsx`: casilla "Dura varios días" que revela un campo "Hasta"
+  (fecha). Construye `fin` con ese día en vez de forzar el de `inicio`.
+- `useEventos.js::porDia`: un evento así se apunta en el índice de **cada**
+  día que ocupa, no solo el primero — así la agenda de un día suelto y la
+  vista semana lo encuentran sin tocar nada más en esos componentes.
+- `VistaMes.jsx` + `src/lib/bandas.js` (nuevo, puro): saca esos eventos de
+  `porDia` una sola vez por id (para no repetir la píldora en cada celda) y
+  los pinta como banda que atraviesa las columnas, cortándose y volviendo a
+  redondear en cada salto de semana de la rejilla de 42 celdas. Cada celda
+  reserva un hueco (`carrilesPorFila`) del alto de las bandas de su fila antes
+  de las píldoras normales, para que no se solapen.
+- El mes del móvil (`compacto`) se queda con el mapa de puntos de siempre, sin
+  banda — el punto ya avisa que ese día tiene algo, y entrando a la agenda del
+  día se ve el evento completo gracias al cambio en `porDia`.
+- **Límite conocido, no arreglado:** `suscribirEventos`/`leerEventos` filtran
+  por `inicio` dentro del rango pedido. Un evento que empieza *antes* del mes
+  visible pero sigue dentro de él (ej. viaje que arranca el 30 de julio y
+  sigue el 1 de agosto, visto solo en agosto) no aparecería. Encaja porque la
+  rejilla de mes siempre se pide entera (42 días) y casi ningún viaje empieza
+  fuera de la vista actual — pero si algún día molesta de verdad, la consulta
+  necesitaría comprobar solapamiento (`fin >= desde`) además de `inicio`, no
+  solo acotar por `inicio`.
+
 ## Cómo trabajar aquí
 
 ```bash

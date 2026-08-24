@@ -4,6 +4,11 @@ import { Trash2, X } from 'lucide-react';
 import { LISTA_CATEGORIAS, coloresDe } from '../config/categorias';
 import { DIAS_CORTOS, claveDe, hoy, horaDe, indiceSemana } from '../lib/fechas';
 
+/** ¿El evento ya tenía un fin en un día distinto al de inicio? */
+function eraMultiDia(evento) {
+  return Boolean(evento?.fin) && claveDe(evento.fin) > claveDe(evento.inicio);
+}
+
 /**
  * Alta y edicion de un evento a mano.
  *
@@ -18,7 +23,14 @@ export default function ModalEvento({ evento, fechaSugerida, oscuro, onGuardar, 
   const [fecha, setFecha] = useState(claveDe(evento?.inicio ?? fechaSugerida ?? hoy()));
   const [todoElDia, setTodoElDia] = useState(evento ? !horaDe(evento.inicio) : false);
   const [inicio, setInicio] = useState(horaDe(evento?.inicio ?? '') ?? '10:00');
-  const [fin, setFin] = useState(horaDe(evento?.fin ?? '') ?? '');
+  const [fin, setFin] = useState(evento && !eraMultiDia(evento) ? horaDe(evento.fin ?? '') ?? '' : '');
+  // Un evento "de varios dias" (el viaje que ocupa 28-30, por ejemplo) es solo
+  // esto mismo con el dia de fin distinto del de inicio — el dato ya existia
+  // (`fin` acepta cualquier fecha), lo que faltaba era dejar picarlo a mano.
+  const [variosDias, setVariosDias] = useState(eraMultiDia(evento));
+  const [finFecha, setFinFecha] = useState(
+    eraMultiDia(evento) ? claveDe(evento.fin) : claveDe(evento?.inicio ?? fechaSugerida ?? hoy()),
+  );
   const [lugar, setLugar] = useState(evento?.lugar ?? '');
   const [nota, setNota] = useState(evento?.nota ?? '');
   const [recordatorioMinutosAntes, setRecordatorioMinutosAntes] = useState(evento?.recordatorioMinutosAntes ?? null);
@@ -40,12 +52,20 @@ export default function ModalEvento({ evento, fechaSugerida, oscuro, onGuardar, 
   const enviar = (e) => {
     e.preventDefault();
     if (!titulo.trim()) return;
+    // Dia de fin real: si "varios dias" esta apagado o el usuario dejo el
+    // campo antes que el de inicio (por ejemplo al desmarcar la casilla), el
+    // evento se queda de un solo dia como siempre.
+    const diaFin = variosDias && finFecha >= fecha ? finFecha : fecha;
+    let valorFin = null;
+    if (diaFin > fecha) valorFin = todoElDia || !fin ? diaFin : `${diaFin}T${fin}`;
+    else if (!todoElDia && fin) valorFin = `${fecha}T${fin}`;
+
     const base = {
       id: evento?.id,
       titulo,
       categoria: categoriaId,
       inicio: todoElDia ? fecha : `${fecha}T${inicio}`,
-      fin: todoElDia || !fin ? null : `${fecha}T${fin}`,
+      fin: valorFin,
       todoElDia,
       lugar,
       nota,
@@ -131,15 +151,48 @@ export default function ModalEvento({ evento, fechaSugerida, oscuro, onGuardar, 
         </div>
 
         <div className="flex flex-col gap-3">
-          <Campo etiqueta="Día">
+          <div className="flex gap-3">
+            <Campo etiqueta={variosDias ? 'Empieza' : 'Día'}>
+              <input
+                type="date"
+                value={fecha}
+                onChange={(e) => {
+                  const nueva = e.target.value;
+                  setFecha(nueva);
+                  // Si el fin quedaba antes del nuevo inicio, lo arrastramos
+                  // con él en vez de dejar un rango invertido silencioso.
+                  if (finFecha < nueva) setFinFecha(nueva);
+                }}
+                className="w-full bg-transparent text-[15px] outline-none"
+                style={{ color: 'var(--tinta)' }}
+              />
+            </Campo>
+            {variosDias && (
+              <Campo etiqueta="Hasta">
+                <input
+                  type="date"
+                  value={finFecha}
+                  min={fecha}
+                  onChange={(e) => setFinFecha(e.target.value)}
+                  className="w-full bg-transparent text-[15px] outline-none"
+                  style={{ color: 'var(--tinta)' }}
+                />
+              </Campo>
+            )}
+          </div>
+
+          <label className="flex cursor-pointer items-center gap-2.5 text-[13.5px]" style={{ color: 'var(--tinta-media)' }}>
             <input
-              type="date"
-              value={fecha}
-              onChange={(e) => setFecha(e.target.value)}
-              className="w-full bg-transparent text-[15px] outline-none"
-              style={{ color: 'var(--tinta)' }}
+              type="checkbox"
+              checked={variosDias}
+              onChange={(e) => {
+                setVariosDias(e.target.checked);
+                if (e.target.checked && finFecha < fecha) setFinFecha(fecha);
+              }}
+              className="h-4 w-4 accent-current"
             />
-          </Campo>
+            Dura varios días
+          </label>
 
           <label className="flex cursor-pointer items-center gap-2.5 text-[13.5px]" style={{ color: 'var(--tinta-media)' }}>
             <input
