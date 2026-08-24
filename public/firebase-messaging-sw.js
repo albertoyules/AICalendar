@@ -27,6 +27,17 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+// Sin esto, un service worker nuevo se queda "esperando" hasta que se
+// cierren TODAS las pestañas que tenían el anterior en marcha — puede
+// tardar días. Con skipWaiting() + clients.claim() el nuevo entra en cuanto
+// el navegador lo instala (siguiente recarga), sin esperar a nada. Real:
+// el cambio a mandar todo por `data` (ver más abajo) se desplegó y, en el
+// escritorio donde la pestaña llevaba abierta un rato, el SW viejo siguió
+// mandando durante horas — leía `notification.title/body`, que ya no
+// llegaba, y caía en el "IA Calendar" genérico de más abajo.
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', (evento) => evento.waitUntil(self.clients.claim()));
+
 // Con la app cerrada o en segundo plano, el navegador entrega aquí el aviso.
 // Con la app abierta y en primer plano, este handler no se dispara — eso lo
 // gestiona onMessage() en el propio cliente (useNotificaciones.js).
