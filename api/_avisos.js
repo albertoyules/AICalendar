@@ -31,10 +31,15 @@ export async function enviarATodosLosDispositivos(refUsuario, { titulo, cuerpo, 
     dispositivos.docs.map((d) =>
       admin.messaging().send({
         token: d.data().token,
-        notification: { title: titulo, body: cuerpo },
-        // El icono, el badge y el agrupado (tag) los decide el propio
-        // service worker al recibirlo — ver public/firebase-messaging-sw.js.
-        data: { tipo },
+        // Todo va en `data`, nada en `notification`: un payload con
+        // `notification` hace que el navegador (o el propio SDK, según
+        // versión) lo muestre solo, además de que onMessage()/
+        // onBackgroundMessage() lo vuelvan a mostrar ellos — doble aviso
+        // por cada envío. Con solo `data` hay un único sitio que decide
+        // mostrarlo: ver public/firebase-messaging-sw.js (segundo plano) y
+        // useNotificaciones.js (primer plano). El icono, el badge y el
+        // agrupado (tag) los decide el propio service worker al recibirlo.
+        data: { titulo, cuerpo, tipo },
       }),
     ),
   );

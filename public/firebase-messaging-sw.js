@@ -30,9 +30,14 @@ const messaging = firebase.messaging();
 // Con la app cerrada o en segundo plano, el navegador entrega aquí el aviso.
 // Con la app abierta y en primer plano, este handler no se dispara — eso lo
 // gestiona onMessage() en el propio cliente (useNotificaciones.js).
-messaging.onBackgroundMessage(({ notification, data }) => {
-  self.registration.showNotification(notification?.title ?? 'IA Calendar', {
-    body: notification?.body,
+//
+// El mensaje viaja entero en `data` (nada en `notification`) a propósito:
+// un payload con `notification` hace que el navegador lo muestre solo,
+// ademas de que este handler lo muestre otra vez — doble aviso. Con solo
+// `data` este es el único sitio que decide mostrarlo en segundo plano.
+messaging.onBackgroundMessage(({ data }) => {
+  self.registration.showNotification(data?.titulo ?? 'IA Calendar', {
+    body: data?.cuerpo,
     icon: '/iconos/icono-192.png',
     badge: '/iconos/icono-192.png',
     tag: data?.tipo ?? 'aviso', // un aviso nuevo del mismo tipo sustituye al anterior, no se amontonan

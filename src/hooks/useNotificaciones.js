@@ -97,11 +97,17 @@ export function useNotificaciones(usuario) {
   // silencio. Por eso el dispositivo desde el que arrancas algo (el que
   // seguramente tienes con la pestaña abierta y mirando) podía parecer que
   // no avisaba, mientras que el resto sí sonaban.
+  //
+  // El mensaje viaja entero en `data` (nada en `notification`, ver
+  // api/_avisos.js) a propósito: con `notification` de por medio, el
+  // navegador podía mostrarlo solo Y este handler mostrarlo otra vez —
+  // doble aviso en primer plano. Con solo `data` este es el único sitio que
+  // decide mostrarlo en primer plano.
   useEffect(() => {
     if (!SOPORTADO || !hayFirebase || permiso !== 'granted') return undefined;
     return onMessage(getMessaging(), (payload) => {
-      const titulo = payload.notification?.title ?? 'IA Calendar';
-      const cuerpo = payload.notification?.body;
+      const titulo = payload.data?.titulo ?? 'IA Calendar';
+      const cuerpo = payload.data?.cuerpo;
       pitido();
       new Notification(titulo, {
         body: cuerpo,

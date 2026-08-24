@@ -98,6 +98,19 @@ porque cubre más meses. No merece la pena intentar "arreglarlo" con un cron
 horario que compruebe la hora local — Hobby rechaza cualquier cron más
 frecuente que diario en el propio despliegue.
 
+**El mensaje de FCM va todo en `data`, nunca en `notification` (arreglado el
+24/08/2026 tras un aviso duplicado).** `enviarATodosLosDispositivos()` mandaba
+`notification: {title, body}` además de `data`. Con ambos a la vez, el
+navegador (según versión) puede mostrar el de `notification` por su cuenta
+Y encima `onMessage()`/`onBackgroundMessage()` lo vuelven a mostrar ellos —
+doble notificación por cada envío, siempre, no solo a veces. Con solo `data`
+(que ahora lleva `titulo`/`cuerpo`/`tipo`, todo como texto — FCM exige que los
+valores de `data` sean strings) hay un único sitio que decide mostrar la
+notificación en cada caso: `firebase-messaging-sw.js::onBackgroundMessage`
+en segundo plano, `useNotificaciones.js::onMessage` en primer plano. Si algún
+día se añade un campo nuevo al aviso, que vaya a `data`, nunca a
+`notification`.
+
 Un usuario puede tener varios dispositivos: cada uno es un documento en
 `usuarios/{uid}/dispositivos/{idLocal}`, con `idLocal` guardado en
 `localStorage` del navegador (no en el uid) para que reactivar el permiso no
