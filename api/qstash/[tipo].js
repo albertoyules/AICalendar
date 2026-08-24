@@ -189,12 +189,28 @@ const AVISOS = {
   recordatorioUnico: avisoRecordatorioUnico,
 };
 
+/**
+ * La URL exacta que QStash firmo al mandar la peticion — para reconstruirla
+ * NO vale `req.url` tal cual. En una ruta dinamica como esta, Vercel cuela el
+ * propio segmento (`tipo`) como query param ademas de resolverlo en el path,
+ * asi que `req.url` trae `...&tipo=recordatorioSemanal` de mas. QStash firmo
+ * la URL de destino que se programo (sin ese `tipo`), asi que `Receiver.verify`
+ * comparaba dos URLs distintas y rechazaba la firma siempre — de ahi que
+ * ningun aviso de los cinco tipos llegara a mandar nada desde que estos
+ * ficheros se fusionaron en una ruta dinamica.
+ */
+function urlFirmada(req) {
+  const { tipo, ...resto } = req.query ?? {};
+  const qs = new URLSearchParams(resto).toString();
+  return `${urlBase()}/api/qstash/${tipo}${qs ? `?${qs}` : ''}`;
+}
+
 export default async function handler(req, res) {
   const firma = req.headers['upstash-signature'];
   if (!firma) return res.status(401).json({ error: 'Falta la firma de QStash.' });
 
   try {
-    const valida = await receptorQstash().verify({ signature: firma, body: '', url: `${urlBase()}${req.url}` });
+    const valida = await receptorQstash().verify({ signature: firma, body: '', url: urlFirmada(req) });
     if (!valida) return res.status(401).json({ error: 'Firma inválida.' });
   } catch (error) {
     console.error(`[qstash/${req.query?.tipo}] firma:`, error);

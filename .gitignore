@@ -11,3 +11,4 @@ dist
 
 # El lienzo de diseño se genera desde los .dc.html; no hace falta versionarlo.
 design/ia-calendar.html
+.env*

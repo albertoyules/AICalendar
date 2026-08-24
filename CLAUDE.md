@@ -248,6 +248,23 @@ va como una función más dentro de `AVISOS` en ese mismo fichero, no como un
 fichero nuevo — cada fichero nuevo bajo `api/` (sin `_`) cuenta para el
 límite, aunque sea diminuto.
 
+**Bug real que esa fusión introdujo (encontrado y arreglado el 24/08/2026):
+ningún aviso de los cinco tipos llegaba a mandar nada.** La verificación de
+firma reconstruía la URL con `req.url` tal cual — pero en una ruta dinámica,
+Vercel cuela el propio segmento (`tipo`) como query param además de
+resolverlo en el path, así que `req.url` traía `...&tipo=recordatorioSemanal`
+de más. QStash firma la URL de *destino* que se programó (sin ese `tipo`), así
+que `Receiver.verify()` comparaba dos URLs distintas y rechazaba la firma
+siempre — 401 en silencio, reintentado por QStash unas pocas veces y
+descartado. Nadie lo notó hasta que faltó un aviso semanal concreto: los
+avisos de hábito/evento/pomodoro llevaban el mismo fallo desde el mismo
+despliegue, solo que menos visible porque hay menos avisos de esos por
+semana. Arreglado con `urlFirmada()` en `api/qstash/[tipo].js`, que
+reconstruye la URL a mano quitando `tipo` de la query en vez de fiarse de
+`req.url`. **Lección para el futuro:** en cualquier ruta dinámica de Vercel
+que verifique una firma sobre su propia URL, `req.url` no es la URL que firmó
+quien la llamó — hay que reconstruirla sin el segmento dinámico.
+
 Dos rutas nuevas en `api/`, **fuera** del par cerebro/servidor de siempre —
 QStash no tiene equivalente en `server/` porque necesita una URL pública de
 verdad, no puede llamar a tu localhost:
