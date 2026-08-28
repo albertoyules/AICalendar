@@ -10,6 +10,20 @@
   --font-serif: 'Instrument Serif', Georgia, serif;
 }
 
+/*
+ * Feedback tactil global: sin esto un boton (p.ej. "Guardar cambios") no
+ * cambia nada al pulsarlo hasta que termina la accion, y parece que no ha
+ * respondido al click. Con :active en vez de :hover funciona igual en
+ * movil, donde no hay hover.
+ */
+button:not(:disabled) {
+  transition: transform 0.1s ease, opacity 0.1s ease;
+}
+button:not(:disabled):active {
+  transform: scale(0.96);
+  opacity: 0.85;
+}
+
 :root {
   color-scheme: light;
 
