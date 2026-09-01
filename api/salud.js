@@ -13,6 +13,7 @@ import Anthropic from '@anthropic-ai/sdk';
 
 import { MODELO, claveLimpia } from './_cerebro.js';
 import { firebaseAdmin } from './_admin.js';
+import { qstash } from './_qstash.js';
 
 function revisarClave() {
   const bruta = process.env.ANTHROPIC_API_KEY;
@@ -139,6 +140,36 @@ function revisarQstash() {
 
 export default async function handler(req, res) {
   const probar = req.query?.probar === '1';
+
+  // DIAGNÓSTICO TEMPORAL (recordatorios únicos que no avisan) — quitar este
+  // bloque en cuanto se resuelva. Protegido con CRON_SECRET como query param
+  // para no dejarlo abierto a cualquiera.
+  if (req.query?.diagQstash === process.env.CRON_SECRET) {
+    try {
+      const schedules = await qstash().schedules.list();
+      let eventos = [];
+      try {
+        const r = await qstash().events({ count: 100 });
+        eventos = r.events ?? r ?? [];
+      } catch (error) {
+        eventos = [{ errorAlListarEventos: error.message }];
+      }
+      return res.status(200).json({
+        schedules: schedules.map((s) => ({
+          scheduleId: s.scheduleId,
+          destination: s.destination,
+          cron: s.cron,
+          paused: s.paused,
+        })),
+        eventosRecordatorio: eventos
+          .filter((e) => String(e.url ?? '').includes('ecordatorio'))
+          .map((e) => ({ time: e.time, state: e.state, url: e.url, messageId: e.messageId, error: e.error })),
+        totalEventos: eventos.length,
+      });
+    } catch (error) {
+      return res.status(500).json({ error: error.message, stack: error.stack?.slice(0, 500) });
+    }
+  }
 
   const clave = revisarClave();
   const cuentaDeServicio = revisarCuentaDeServicio();
