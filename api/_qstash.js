@@ -76,3 +76,25 @@ export function diaCron(diaApp) {
  * tarda en pasar por uno que esté justo en el borde.
  */
 export const MAX_ADELANTO_SEGUNDOS = 6.5 * 24 * 60 * 60;
+
+/**
+ * El plan gratuito de QStash también limita a 10 *schedules activos* en
+ * total (hábitos + recordatorios semanales comparten el mismo cupo). Por
+ * encima de eso, `schedules.create()` no lanza nada especial: es un
+ * `QstashError` genérico con el texto del límite en el mensaje — por eso se
+ * detecta por texto, no por un código de error dedicado que la librería no
+ * ofrece.
+ *
+ * Encontrado el 06/09/2026: el navegador nunca comprobaba si esta llamada
+ * fallaba (`fetch` sin mirar `response.ok`), así que un hábito o recordatorio
+ * de más de la cuenta 10 se guardaba en Firestore con toda normalidad, pero
+ * su *schedule* nunca llegaba a crearse en QStash — sin ningún error visible
+ * en ningún sitio. El usuario lo notó porque "los avisos más recientes" no
+ * sonaban, mientras los primeros 10 creados seguían bien.
+ */
+export function esLimiteDeSchedules(error) {
+  return /schedule/i.test(error?.message ?? '') && /limit|máximo|maximum/i.test(error?.message ?? '');
+}
+
+export const MENSAJE_LIMITE_SCHEDULES =
+  'Has llegado al máximo de 10 avisos programados del plan gratuito de QStash. Borra o desactiva algún hábito o recordatorio semanal antes de añadir otro, o pasa la cuenta de Upstash a "Pay as you go" (gratis hasta 1000).';
