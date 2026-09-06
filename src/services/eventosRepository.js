@@ -90,19 +90,29 @@ export function normalizarEvento(bruto) {
  * habitosRepository.js — el token de QStash no puede bajar al navegador).
  * Best-effort: si falla (sin desplegar, sin red, sin las variables de
  * QStash), el evento se guarda igual, solo que sin aviso.
+ *
+ * Devuelve el mensaje de error si algo falló, o null si fue bien — quien
+ * llama decide si avisar. Antes del 06/09/2026 esto se tragaba en un
+ * console.warn sin comprobar `response.ok`.
  */
 async function sincronizarRecordatorioEvento(eventoId, inicio, recordatorioMinutosAntes) {
-  if (!enFirestore()) return;
+  if (!enFirestore()) return null;
   try {
     const idToken = await idTokenActual();
-    if (!idToken) return;
-    await fetch('/api/eventos/recordatorio', {
+    if (!idToken) return null;
+    const respuesta = await fetch('/api/eventos/recordatorio', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ idToken, eventoId, inicio, recordatorioMinutosAntes }),
     });
+    if (!respuesta.ok) {
+      const cuerpo = await respuesta.json().catch(() => ({}));
+      return cuerpo.error ?? `El servidor respondió ${respuesta.status} al programar el aviso.`;
+    }
+    return null;
   } catch (error) {
     console.warn('[IA Calendar] no se ha podido sincronizar el aviso del evento:', error);
+    return 'No se ha podido contactar con el servidor para programar el aviso.';
   }
 }
 
@@ -193,22 +203,25 @@ export async function leerEventos(desde, hasta) {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
+/** Devuelve { id, avisoError }: avisoError solo si el evento llevaba aviso y no se pudo programar. */
 export async function guardarEvento(bruto) {
   const evento = { ...normalizarEvento(bruto), creadoEn: new Date().toISOString() };
 
   if (!enFirestore()) {
     const id = idLocal();
     escribirLocal([...leerLocal(), { id, ...evento }]);
-    return id;
+    return { id, avisoError: null };
   }
 
   const ref = await addDoc(coleccionEventos(), evento);
+  let avisoError = null;
   if (evento.recordatorioMinutosAntes) {
-    await sincronizarRecordatorioEvento(ref.id, evento.inicio, evento.recordatorioMinutosAntes);
+    avisoError = await sincronizarRecordatorioEvento(ref.id, evento.inicio, evento.recordatorioMinutosAntes);
   }
-  return ref.id;
+  return { id: ref.id, avisoError };
 }
 
+/** Devuelve avisoError (null si fue bien, o no había aviso que tocar). */
 export async function actualizarEvento(id, cambiosBrutos) {
   // La IA manda 0 para "quita el aviso" (su esquema no admite null) — se deja
   // en null antes de guardar, que es como vive "sin aviso" en el resto del código.
@@ -219,7 +232,7 @@ export async function actualizarEvento(id, cambiosBrutos) {
 
   if (!enFirestore()) {
     escribirLocal(leerLocal().map((e) => (e.id === id ? { ...e, ...cambios } : e)));
-    return;
+    return null;
   }
   await updateDoc(documentoEvento(id), cambios);
 
@@ -228,8 +241,9 @@ export async function actualizarEvento(id, cambiosBrutos) {
   if ('inicio' in cambios || 'recordatorioMinutosAntes' in cambios) {
     const snap = await getDoc(documentoEvento(id));
     const actual = snap.data();
-    await sincronizarRecordatorioEvento(id, actual.inicio, actual.recordatorioMinutosAntes);
+    return sincronizarRecordatorioEvento(id, actual.inicio, actual.recordatorioMinutosAntes);
   }
+  return null;
 }
 
 export async function borrarEvento(id) {

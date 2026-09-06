@@ -12,8 +12,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 
 import { MODELO, claveLimpia } from './_cerebro.js';
-import { firebaseAdmin, uidDesdeToken } from './_admin.js';
-import { qstash, urlBase } from './_qstash.js';
+import { firebaseAdmin } from './_admin.js';
 
 function revisarClave() {
   const bruta = process.env.ANTHROPIC_API_KEY;
@@ -140,35 +139,6 @@ function revisarQstash() {
 
 export default async function handler(req, res) {
   const probar = req.query?.probar === '1';
-
-  // DIAGNÓSTICO TEMPORAL — capturar el mensaje real de QStash al superar el
-  // límite de 10 schedules, para reconocerlo bien en código. Se crea (e
-  // intenta borrar de inmediato) un schedule descartable, protegido con
-  // idToken de sesión. Quitar en cuanto se confirme el texto del error.
-  if (req.query?.diagLimite) {
-    try {
-      await uidDesdeToken(req.query.diagLimite);
-      const idPrueba = `diag-limite-${Date.now()}`;
-      try {
-        await qstash().schedules.create({
-          scheduleId: idPrueba,
-          destination: `${urlBase()}/api/qstash/recordatorio?uid=diag&habitoId=diag`,
-          cron: '0 9 * * *',
-        });
-        await qstash().schedules.delete(idPrueba).catch(() => {});
-        return res.status(200).json({ resultado: 'se creó sin problema (no estás en el límite ahora mismo)' });
-      } catch (error) {
-        return res.status(200).json({
-          resultado: 'ERROR al crear',
-          message: error?.message,
-          status: error?.status,
-          name: error?.name,
-        });
-      }
-    } catch (error) {
-      return res.status(401).json({ error: 'Sesión no válida.' });
-    }
-  }
 
   const clave = revisarClave();
   const cuentaDeServicio = revisarCuentaDeServicio();

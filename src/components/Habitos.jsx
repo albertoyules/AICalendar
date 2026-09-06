@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Bell, Check, Plus } from 'lucide-react';
 
+import ContadorAvisos from './ContadorAvisos';
 import ModalHabito from './ModalHabito';
 import { useHabitos } from '../hooks/useHabitos';
 import { alternarMarca, actualizarHabito, borrarHabito, crearHabito } from '../services/habitosRepository';
@@ -23,17 +24,21 @@ export default function Habitos({ oscuro, listo, compacto }) {
 
   const guardar = async (datos) => {
     try {
+      let avisoError = null;
       if (datos.id) {
-        await actualizarHabito(datos.id, {
+        avisoError = await actualizarHabito(datos.id, {
           nombre: datos.nombre,
           categoria: datos.categoria,
           objetivoSemanal: datos.objetivoSemanal,
           horaAviso: datos.horaAviso,
         });
       } else {
-        await crearHabito(datos);
+        ({ avisoError } = await crearHabito(datos));
       }
-      setError(null);
+      // El hábito en sí se guarda igual aunque el aviso no se pudiera
+      // programar (p. ej. límite de QStash alcanzado) — se avisa, pero no se
+      // trata como si hubiera fallado el guardado.
+      setError(avisoError ? `Hábito guardado, pero el aviso no se pudo programar: ${avisoError}` : null);
       setModal(null);
     } catch (e) {
       setError(explicarFallo(e));
@@ -70,15 +75,18 @@ export default function Habitos({ oscuro, listo, compacto }) {
             Últimos siete días
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setModal({})}
-          className="flex h-9 items-center gap-2 rounded-[10px] px-3.5 text-[13px] font-medium"
-          style={{ background: 'var(--superficie)', border: '1px solid var(--borde)', color: 'var(--tinta)' }}
-        >
-          <Plus size={15} strokeWidth={1.8} />
-          Nuevo hábito
-        </button>
+        <div className="flex items-center gap-3">
+          <ContadorAvisos listo={listo} />
+          <button
+            type="button"
+            onClick={() => setModal({})}
+            className="flex h-9 items-center gap-2 rounded-[10px] px-3.5 text-[13px] font-medium"
+            style={{ background: 'var(--superficie)', border: '1px solid var(--borde)', color: 'var(--tinta)' }}
+          >
+            <Plus size={15} strokeWidth={1.8} />
+            Nuevo hábito
+          </button>
+        </div>
       </div>
 
       {error && (

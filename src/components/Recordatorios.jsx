@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Plus, Repeat, Trash2 } from 'lucide-react';
 
+import ContadorAvisos from './ContadorAvisos';
 import ModalRecordatorio from './ModalRecordatorio';
 import { useRecordatorios } from '../hooks/useRecordatorios';
 import { actualizarRecordatorio, borrarRecordatorio, crearRecordatorio } from '../services/recordatoriosRepository';
@@ -33,9 +34,13 @@ export default function Recordatorios({ oscuro, listo }) {
 
   const guardar = async (datos) => {
     try {
-      if (datos.id) await actualizarRecordatorio(datos.id, datos);
-      else await crearRecordatorio(datos);
-      setError(null);
+      let avisoError = null;
+      if (datos.id) avisoError = await actualizarRecordatorio(datos.id, datos);
+      else ({ avisoError } = await crearRecordatorio(datos));
+      // El recordatorio se guarda igual aunque el aviso no se pudiera
+      // programar (p. ej. límite de QStash alcanzado) — se avisa, pero no se
+      // trata como si hubiera fallado el guardado.
+      setError(avisoError ? `Recordatorio guardado, pero el aviso no se pudo programar: ${avisoError}` : null);
       setModal(null);
     } catch (e) {
       setError(explicarFallo(e));
@@ -63,15 +68,18 @@ export default function Recordatorios({ oscuro, listo }) {
             Avisos sueltos, dentro y fuera del calendario
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setModal({})}
-          className="flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-[10px] px-3.5 text-[13px] font-medium"
-          style={{ background: 'var(--superficie)', border: '1px solid var(--borde)', color: 'var(--tinta)' }}
-        >
-          <Plus size={15} strokeWidth={1.8} />
-          Nuevo
-        </button>
+        <div className="flex shrink-0 items-center gap-3">
+          <ContadorAvisos listo={listo} />
+          <button
+            type="button"
+            onClick={() => setModal({})}
+            className="flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-[10px] px-3.5 text-[13px] font-medium"
+            style={{ background: 'var(--superficie)', border: '1px solid var(--borde)', color: 'var(--tinta)' }}
+          >
+            <Plus size={15} strokeWidth={1.8} />
+            Nuevo
+          </button>
+        </div>
       </div>
 
       {error && (

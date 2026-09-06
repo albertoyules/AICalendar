@@ -113,13 +113,15 @@ const ACCIONES = {
       const { serieId, creados } = await crearSerieRecurrente({ ...datos, creadoPor: 'ia' }, repetir);
       return { ok: true, serieId, creados };
     }
-    const id = await guardarEvento({ ...datos, creadoPor: 'ia' });
+    const { id, avisoError } = await guardarEvento({ ...datos, creadoPor: 'ia' });
+    if (avisoError) return { ok: true, id, avisoNoProgramado: avisoError };
     return { ok: true, id };
   },
 
   async editar_evento({ id, ...cambios }) {
     if (Object.keys(cambios).length === 0) return { ok: false, motivo: 'No has mandado ningún cambio.' };
-    await actualizarEvento(id, cambios);
+    const avisoError = await actualizarEvento(id, cambios);
+    if (avisoError) return { ok: true, avisoNoProgramado: avisoError };
     return { ok: true };
   },
 
@@ -134,7 +136,11 @@ const ACCIONES = {
   },
 
   async crear_recordatorio(datos) {
-    const id = await crearRecordatorio({ ...datos, creadoPor: 'ia' });
+    const { id, avisoError } = await crearRecordatorio({ ...datos, creadoPor: 'ia' });
+    // Se guarda igual aunque el aviso no se pudiera programar (p. ej. límite
+    // de QStash alcanzado) — se avisa para que el asistente lo diga, en vez
+    // de fingir que quedó todo programado.
+    if (avisoError) return { ok: true, id, avisoNoProgramado: avisoError };
     return { ok: true, id };
   },
 

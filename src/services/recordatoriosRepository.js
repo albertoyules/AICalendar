@@ -71,15 +71,22 @@ export function normalizarRecordatorio(bruto) {
  * Da de alta, reprograma o retira el aviso de un recordatorio en QStash, vía
  * el servidor (el token de QStash no puede bajar al navegador). Igual que en
  * habitosRepository.js: si esto falla —sin desplegar todavía, sin las
- * variables de QStash puestas, sin red— el recordatorio se guarda igual,
- * solo que sin aviso. Nunca debe tirar abajo el guardado.
+ * variables de QStash puestas, sin red, o por el límite de 10 *schedules*
+ * del plan gratuito— el recordatorio se guarda igual, solo que sin aviso.
+ * Nunca debe tirar abajo el guardado.
+ *
+ * Devuelve el mensaje de error si algo falló, o null si fue bien — quien
+ * llama decide si avisar. Antes del 06/09/2026 esto se tragaba en un
+ * console.warn sin comprobar `response.ok`: un fallo del servidor no lanza
+ * excepción en `fetch`, así que un recordatorio quedaba guardado sin aviso
+ * activo, sin que nadie se enterara de por qué.
  */
 async function sincronizarRecordatorio(recordatorioId, recordatorio) {
-  if (!enFirestore()) return;
+  if (!enFirestore()) return null;
   try {
     const idToken = await idTokenActual();
-    if (!idToken) return;
-    await fetch('/api/recordatorios/programar', {
+    if (!idToken) return null;
+    const respuesta = await fetch('/api/recordatorios/programar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -92,8 +99,14 @@ async function sincronizarRecordatorio(recordatorioId, recordatorio) {
         hora: recordatorio?.hora ?? null,
       }),
     });
+    if (!respuesta.ok) {
+      const cuerpo = await respuesta.json().catch(() => ({}));
+      return cuerpo.error ?? `El servidor respondió ${respuesta.status} al programar el aviso.`;
+    }
+    return null;
   } catch (error) {
     console.warn('[IA Calendar] no se ha podido sincronizar el aviso del recordatorio:', error);
+    return 'No se ha podido contactar con el servidor para programar el aviso.';
   }
 }
 
@@ -150,6 +163,7 @@ export async function leerRecordatorios() {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
+/** Devuelve { id, avisoError }: avisoError solo si no se pudo programar el aviso. */
 export async function crearRecordatorio(bruto) {
   const recordatorio = {
     ...normalizarRecordatorio(bruto),
@@ -161,23 +175,24 @@ export async function crearRecordatorio(bruto) {
   if (!enFirestore()) {
     const id = idLocal();
     escribirLocal([...leerLocal(), { id, ...recordatorio }]);
-    return id;
+    return { id, avisoError: null };
   }
 
   const ref = await addDoc(coleccionRecordatorios(), recordatorio);
-  await sincronizarRecordatorio(ref.id, recordatorio);
-  return ref.id;
+  const avisoError = await sincronizarRecordatorio(ref.id, recordatorio);
+  return { id: ref.id, avisoError };
 }
 
+/** Devuelve avisoError (null si fue bien). */
 export async function actualizarRecordatorio(id, cambios) {
   const normalizado = normalizarRecordatorio(cambios);
 
   if (!enFirestore()) {
     escribirLocal(leerLocal().map((r) => (r.id === id ? { ...r, ...normalizado } : r)));
-    return;
+    return null;
   }
   await updateDoc(documentoRecordatorio(id), { ...normalizado, hecho: false });
-  await sincronizarRecordatorio(id, normalizado);
+  return sincronizarRecordatorio(id, normalizado);
 }
 
 export async function borrarRecordatorio(id) {

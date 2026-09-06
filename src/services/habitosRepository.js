@@ -60,21 +60,35 @@ export function normalizarHabito(bruto) {
  * Da de alta o retira el aviso de un hábito en QStash, vía el servidor (el
  * token de QStash no puede bajar al navegador). Es un extra sobre el hábito
  * en sí: si esto falla — sin desplegar todavía, sin las variables de QStash
- * puestas, sin red — el hábito se guarda igual, solo que sin aviso. Nunca
- * debe tirar abajo el guardado del hábito por esto.
+ * puestas, sin red, o por haber llegado al límite de 10 *schedules* del plan
+ * gratuito — el hábito se guarda igual, solo que sin aviso. Nunca debe tirar
+ * abajo el guardado del hábito por esto.
+ *
+ * Devuelve el mensaje de error si algo falló, o null si fue bien — quien
+ * llama decide si avisar al usuario. Antes del 06/09/2026 esto se tragaba en
+ * un console.warn sin comprobar `response.ok`: un fallo del servidor (p. ej.
+ * "límite de schedules alcanzado") no lanza excepción en `fetch`, así que el
+ * hábito quedaba guardado con toda normalidad, sin aviso activo, sin que
+ * nadie se enterara de por qué.
  */
 async function sincronizarRecordatorio(habitoId, horaAviso) {
-  if (!enFirestore()) return;
+  if (!enFirestore()) return null;
   try {
     const idToken = await idTokenActual();
-    if (!idToken) return;
-    await fetch('/api/habitos/recordatorio', {
+    if (!idToken) return null;
+    const respuesta = await fetch('/api/habitos/recordatorio', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ idToken, habitoId, horaAviso }),
     });
+    if (!respuesta.ok) {
+      const cuerpo = await respuesta.json().catch(() => ({}));
+      return cuerpo.error ?? `El servidor respondió ${respuesta.status} al programar el aviso.`;
+    }
+    return null;
   } catch (error) {
     console.warn('[IA Calendar] no se ha podido sincronizar el aviso del hábito:', error);
+    return 'No se ha podido contactar con el servidor para programar el aviso.';
   }
 }
 
@@ -124,27 +138,30 @@ export function suscribirHabitos(alCambiar, alFallar) {
   );
 }
 
+/** Devuelve { id, avisoError }: avisoError solo si el hábito llevaba aviso y no se pudo programar. */
 export async function crearHabito(bruto) {
   const habito = { ...normalizarHabito(bruto), marcas: {}, creadoEn: new Date().toISOString() };
 
   if (!enFirestore()) {
     const id = idLocal();
     escribirLocal([...leerLocal(), { id, ...habito }]);
-    return id;
+    return { id, avisoError: null };
   }
 
   const ref = await addDoc(coleccionHabitos(), habito);
-  await sincronizarRecordatorio(ref.id, habito.horaAviso);
-  return ref.id;
+  const avisoError = await sincronizarRecordatorio(ref.id, habito.horaAviso);
+  return { id: ref.id, avisoError };
 }
 
+/** Devuelve avisoError (null si fue bien, o no había aviso que tocar). */
 export async function actualizarHabito(id, cambios) {
   if (!enFirestore()) {
     escribirLocal(leerLocal().map((h) => (h.id === id ? { ...h, ...cambios } : h)));
-    return;
+    return null;
   }
   await updateDoc(documentoHabito(id), cambios);
-  if ('horaAviso' in cambios) await sincronizarRecordatorio(id, cambios.horaAviso);
+  if ('horaAviso' in cambios) return sincronizarRecordatorio(id, cambios.horaAviso);
+  return null;
 }
 
 export async function borrarHabito(id) {

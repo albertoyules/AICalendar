@@ -125,10 +125,13 @@ export default function App() {
   const alGuardar = useCallback(async (datos) => {
     const { id, repetir, ...resto } = datos;
     try {
-      if (id) await actualizarEvento(id, resto);
+      let avisoError = null;
+      if (id) avisoError = await actualizarEvento(id, resto);
       else if (repetir) await crearSerieRecurrente(resto, repetir);
-      else await guardarEvento(resto);
-      setAvisoEscritura(null);
+      else ({ avisoError } = await guardarEvento(resto));
+      // El evento se guarda igual aunque el aviso "X antes" no se pudiera
+      // programar — se avisa, pero no se trata como si hubiera fallado el guardado.
+      setAvisoEscritura(avisoError ? `Evento guardado, pero el aviso no se pudo programar: ${avisoError}` : null);
       setModal(null);
     } catch (error) {
       setAvisoEscritura(explicarFallo(error));

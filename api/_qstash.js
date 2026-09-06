@@ -79,22 +79,25 @@ export const MAX_ADELANTO_SEGUNDOS = 6.5 * 24 * 60 * 60;
 
 /**
  * El plan gratuito de QStash también limita a 10 *schedules activos* en
- * total (hábitos + recordatorios semanales comparten el mismo cupo). Por
- * encima de eso, `schedules.create()` no lanza nada especial: es un
- * `QstashError` genérico con el texto del límite en el mensaje — por eso se
- * detecta por texto, no por un código de error dedicado que la librería no
- * ofrece.
+ * total (hábitos + recordatorios semanales comparten el mismo cupo — el
+ * número vive en `src/hooks/useSchedulesQstash.js`, que calcula el contador
+ * visible en la interfaz; no se repite aquí porque este fichero es código de
+ * servidor, no importable desde `src/`).
  *
- * Encontrado el 06/09/2026: el navegador nunca comprobaba si esta llamada
- * fallaba (`fetch` sin mirar `response.ok`), así que un hábito o recordatorio
- * de más de la cuenta 10 se guardaba en Firestore con toda normalidad, pero
- * su *schedule* nunca llegaba a crearse en QStash — sin ningún error visible
- * en ningún sitio. El usuario lo notó porque "los avisos más recientes" no
- * sonaban, mientras los primeros 10 creados seguían bien.
+ * Encontrado el 06/09/2026: el navegador nunca comprobaba si la llamada a
+ * /api/habitos/recordatorio o /api/recordatorios/programar fallaba (`fetch`
+ * sin mirar `response.ok`), así que un hábito o recordatorio de más de la
+ * cuenta 10 se guardaba en Firestore con toda normalidad, pero su *schedule*
+ * nunca llegaba a crearse en QStash — sin ningún error visible en ningún
+ * sitio. El usuario lo notó porque "los avisos más recientes" no sonaban,
+ * mientras los primeros 10 creados seguían bien.
+ *
+ * El arreglo no intenta reconocer el límite por el texto del error (no se
+ * llegó a confirmar cuál es exactamente, y adivinarlo es frágil): en su
+ * lugar, tanto este límite como cualquier otro fallo de QStash se propagan
+ * tal cual desde el servidor (el `catch` de cada endpoint ya devolvía
+ * `error.message`) hasta la interfaz — el hueco estaba en el navegador, que
+ * nunca comprobaba `response.ok` (ver `sincronizarRecordatorio()` en
+ * `src/services/habitosRepository.js` y `recordatoriosRepository.js`, y
+ * `sincronizarRecordatorioEvento()` en `eventosRepository.js`).
  */
-export function esLimiteDeSchedules(error) {
-  return /schedule/i.test(error?.message ?? '') && /limit|máximo|maximum/i.test(error?.message ?? '');
-}
-
-export const MENSAJE_LIMITE_SCHEDULES =
-  'Has llegado al máximo de 10 avisos programados del plan gratuito de QStash. Borra o desactiva algún hábito o recordatorio semanal antes de añadir otro, o pasa la cuenta de Upstash a "Pay as you go" (gratis hasta 1000).';
