@@ -173,14 +173,14 @@ export default async function handler(req, res) {
   const clave = revisarClave();
   const cuentaDeServicio = revisarCuentaDeServicio();
   const cronSecret = revisarCronSecret();
-  const qstash = revisarQstash();
+  const estadoQstash = revisarQstash();
 
   const informe = {
     servidor: 'en pie',
     modelo: MODELO,
     clave,
     avisosPush: { cuentaDeServicio, cronSecret },
-    recordatoriosHabitos: { qstash },
+    recordatoriosHabitos: { qstash: estadoQstash },
   };
 
   // La prueba real solo bajo petición: cada llamada gasta (poquísimo, pero gasta).
